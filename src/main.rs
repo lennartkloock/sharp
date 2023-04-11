@@ -3,7 +3,6 @@ use axum_extra::extract::CookieJar;
 use hyper::{
     server::conn::AddrStream,
     service::{make_service_fn, service_fn},
-    Body,
 };
 use std::{convert::Infallible, net::SocketAddr};
 use tower::ServiceExt;
