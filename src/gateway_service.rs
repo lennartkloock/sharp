@@ -4,6 +4,7 @@ use tokio::net::TcpStream;
 
 pub async fn service(
     mut req: Request<Body>,
+    client_addr: SocketAddr,
     out_addr: SocketAddr,
 ) -> hyper::Result<Response<Body>> {
     let uri_string = format!(
@@ -16,14 +17,14 @@ pub async fn service(
     );
     let uri = uri_string.parse().unwrap();
     *req.uri_mut() = uri;
-    // req.headers_mut().insert(
-    //     "X-Sharp-Client-Ip",
-    //     client_addr.ip().to_string().parse().unwrap(),
-    // );
-    // req.headers_mut().insert(
-    //     "X-Sharp-Client-Port",
-    //     client_addr.port().to_string().parse().unwrap(),
-    // );
+    req.headers_mut().insert(
+        "X-Sharp-Client-Ip",
+        client_addr.ip().to_string().parse().unwrap(),
+    );
+    req.headers_mut().insert(
+        "X-Sharp-Client-Port",
+        client_addr.port().to_string().parse().unwrap(),
+    );
 
     let host = req.uri().host().expect("uri has no host");
     let port = req.uri().port_u16().unwrap_or(80);
