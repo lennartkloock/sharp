@@ -1,9 +1,7 @@
 use std::net::SocketAddr;
+use tower::{make::Shared, service_fn};
 use tracing::info;
-use tracing_subscriber::EnvFilter;
-use tower::make::Shared;
-use tower::service_fn;
-use tracing_subscriber::filter::LevelFilter;
+use tracing_subscriber::{filter::LevelFilter, EnvFilter};
 
 const VERSION_STRING: &str = concat!(env!("CARGO_PKG_NAME"), " v", env!("CARGO_PKG_VERSION"));
 
@@ -30,6 +28,8 @@ async fn main() -> hyper::Result<()> {
     axum::Server::bind(&in_addr)
         .http1_preserve_header_case(true)
         .http1_title_case_headers(true)
-        .serve(Shared::new(service_fn(move |req| gateway_service::service(req, out_addr))))
+        .serve(Shared::new(service_fn(move |req| {
+            gateway_service::service(req, out_addr)
+        })))
         .await
 }

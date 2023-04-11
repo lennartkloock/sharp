@@ -1,8 +1,11 @@
-use std::net::SocketAddr;
 use hyper::{Body, Request, Response};
+use std::net::SocketAddr;
 use tokio::net::TcpStream;
 
-pub async fn service(mut req: Request<Body>, out_addr: SocketAddr) -> hyper::Result<Response<Body>> {
+pub async fn service(
+    mut req: Request<Body>,
+    out_addr: SocketAddr,
+) -> hyper::Result<Response<Body>> {
     let uri_string = format!(
         "http://{}{}",
         out_addr,
@@ -28,8 +31,7 @@ pub async fn service(mut req: Request<Body>, out_addr: SocketAddr) -> hyper::Res
 
     match TcpStream::connect(addr).await {
         Ok(client_stream) => {
-            let (mut sender, conn) =
-                hyper::client::conn::handshake(client_stream).await?;
+            let (mut sender, conn) = hyper::client::conn::handshake(client_stream).await?;
             tokio::task::spawn(async move {
                 if let Err(err) = conn.await {
                     println!("Connection failed: {:?}", err);
