@@ -1,7 +1,9 @@
 use std::net::SocketAddr;
-use log::info;
+use tracing::info;
+use tracing_subscriber::EnvFilter;
 use tower::make::Shared;
 use tower::service_fn;
+use tracing_subscriber::filter::LevelFilter;
 
 const VERSION_STRING: &str = concat!(env!("CARGO_PKG_NAME"), " v", env!("CARGO_PKG_VERSION"));
 
@@ -9,7 +11,13 @@ mod gateway_service;
 
 #[tokio::main]
 async fn main() -> hyper::Result<()> {
-    pretty_env_logger::init();
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            EnvFilter::builder()
+                .with_default_directive(LevelFilter::INFO.into())
+                .from_env_lossy(),
+        )
+        .init();
 
     info!("{VERSION_STRING}");
 
