@@ -10,7 +10,6 @@ const VERSION_STRING: &str = concat!(env!("CARGO_PKG_NAME"), " v", env!("CARGO_P
 async fn main() -> Result<(), Box<dyn Error>> {
     pretty_env_logger::init();
 
-    info!("CI/CD Test");
     info!("{VERSION_STRING}");
 
     let in_addr: SocketAddr = ([127, 0, 0, 1], 3001).into();
