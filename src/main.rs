@@ -27,14 +27,14 @@ mod gateway_service;
 #[command(author, version, about, long_about)]
 struct Args {
     /// Relative path to the config file
-    #[arg(long, default_value_os_t = PathBuf::from("sharp.toml"))]
+    #[arg(short, long, default_value_os_t = PathBuf::from("sharp.toml"))]
     config: PathBuf,
     /// Log level
     #[arg(short, long, default_value_t = Level::INFO)]
     log_level: Level,
     /// Check config file for errors
-    #[arg(short, long)]
-    check_config: bool,
+    #[arg(long)]
+    check: bool,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -60,13 +60,13 @@ async fn main() {
 
     info!("{VERSION_STRING} - show help with --help");
 
-    let config_res = if args.check_config {
+    let config_res = if args.check {
         config::read_config(|| SharpConfigBuilder::from_file(args.config)).await
     } else {
         config::read_run_config(args.config).await
     };
     match config_res {
-        Ok(_) if args.check_config => info!("config is OK"),
+        Ok(_) if args.check => info!("config is OK"),
         Ok(config) => sharp(config).await,
         Err(e) => error!("{e}"),
     }
