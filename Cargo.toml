@@ -1,0 +1,18 @@
+[package]
+name = "sharp"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tracing = "0.1.37"
+tracing-subscriber = { version = "0.3.16", features = ["env-filter"] }
+
+thiserror = "1.0.40"
+
+tokio = { version = "1.27.0", features = ["rt-multi-thread", "macros", "net"] }
+axum = { version = "0.6.12" }
+axum-extra = { version = "0.7.3", features = ["cookie"] }
+hyper = { version = "0.14.25", features = ["client"] }
+tower = { version = "0.4.13" }
