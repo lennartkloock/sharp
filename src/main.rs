@@ -1,13 +1,12 @@
 use crate::config::SharpConfig;
 use axum_extra::extract::CookieJar;
+use clap::Parser;
 use hyper::{
     body::HttpBody,
     server::conn::AddrStream,
     service::{make_service_fn, service_fn},
 };
-use std::{convert::Infallible, net::SocketAddr};
-use std::path::PathBuf;
-use clap::Parser;
+use std::{convert::Infallible, net::SocketAddr, path::PathBuf};
 use tower::ServiceExt;
 use tracing::{error, info};
 use tracing_subscriber::{filter::LevelFilter, EnvFilter};
