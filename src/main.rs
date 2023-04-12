@@ -1,6 +1,6 @@
-use axum::body::HttpBody;
 use axum_extra::extract::CookieJar;
 use hyper::{
+    body::HttpBody,
     server::conn::AddrStream,
     service::{make_service_fn, service_fn},
 };
@@ -12,8 +12,8 @@ use tracing_subscriber::{filter::LevelFilter, EnvFilter};
 const VERSION_STRING: &str = concat!(env!("CARGO_PKG_NAME"), " v", env!("CARGO_PKG_VERSION"));
 
 mod app;
-mod gateway_service;
 mod exceptions;
+mod gateway_service;
 
 #[derive(Debug, thiserror::Error)]
 enum RoutingError {
@@ -64,7 +64,7 @@ async fn main() {
                                     .map(|res| {
                                         res.map(|b| b.map_err(RoutingError::from).boxed_unsync())
                                     })
-                            },
+                            }
                             (_, Some(cookie)) => {
                                 info!("cookie was set, proxying...");
                                 // TODO: Check cookie
@@ -73,7 +73,7 @@ async fn main() {
                                     .map(|res| {
                                         res.map(|b| b.map_err(RoutingError::from).boxed_unsync())
                                     })
-                            },
+                            }
                             (_, _) => {
                                 info!("client couldn't authorize");
                                 Ok(router
