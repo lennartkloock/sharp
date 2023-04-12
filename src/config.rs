@@ -1,10 +1,12 @@
-use std::env;
-use std::net::{AddrParseError, IpAddr, SocketAddr};
-use std::num::ParseIntError;
-use std::path::Path;
-use std::str::FromStr;
 use derive_builder::Builder;
 use merge::Merge;
+use std::{
+    env,
+    net::{AddrParseError, IpAddr, SocketAddr},
+    num::ParseIntError,
+    path::Path,
+    str::FromStr,
+};
 use tracing::{debug, info};
 
 #[derive(Builder)]
@@ -14,7 +16,9 @@ pub struct SharpConfig {
     pub address: IpAddr,
     pub port: u16,
     pub upstream: SocketAddr,
-    #[builder(default = "vec![\"/favicon.ico\".to_string(), \"/robots.txt\".to_string(), \"/sitemap.xml\".to_string()]")]
+    #[builder(
+        default = "vec![\"/favicon.ico\".to_string(), \"/robots.txt\".to_string(), \"/sitemap.xml\".to_string()]"
+    )]
     pub exceptions: Vec<String>,
 }
 

@@ -1,3 +1,4 @@
+use crate::config::SharpConfig;
 use axum_extra::extract::CookieJar;
 use hyper::{
     body::HttpBody,
@@ -8,7 +9,6 @@ use std::{convert::Infallible, net::SocketAddr};
 use tower::ServiceExt;
 use tracing::{error, info};
 use tracing_subscriber::{filter::LevelFilter, EnvFilter};
-use crate::config::SharpConfig;
 
 const VERSION_STRING: &str = concat!(env!("CARGO_PKG_NAME"), " v", env!("CARGO_PKG_VERSION"));
 
