@@ -6,16 +6,31 @@ use hyper::{
     service::{make_service_fn, service_fn},
 };
 use std::{convert::Infallible, net::SocketAddr};
+use std::path::PathBuf;
+use clap::Parser;
 use tower::ServiceExt;
 use tracing::{error, info};
 use tracing_subscriber::{filter::LevelFilter, EnvFilter};
 
-const VERSION_STRING: &str = concat!(env!("CARGO_PKG_NAME"), " v", env!("CARGO_PKG_VERSION"));
+const VERSION_STRING: &str = concat!(env!("CARGO_PKG_NAME"), " ", env!("CARGO_PKG_VERSION"));
 
 mod app;
 mod config;
 mod exceptions;
 mod gateway_service;
+
+// TODO: Improve slogan, include in README
+
+/// [s]elf-[h]osted [a]uthentication [r]everse [p]roxy
+///
+/// Simple user management for your web backend
+#[derive(clap::Parser)]
+#[command(author, version, about, long_about)]
+struct Args {
+    /// Relative path to the config file
+    #[arg(short, long)]
+    config: Option<PathBuf>,
+}
 
 #[derive(Debug, thiserror::Error)]
 enum RoutingError {
@@ -27,6 +42,8 @@ enum RoutingError {
 
 #[tokio::main]
 async fn main() {
+    let args = Args::parse();
+
     tracing_subscriber::fmt()
         .with_env_filter(
             EnvFilter::builder()
@@ -36,9 +53,9 @@ async fn main() {
         )
         .init();
 
-    info!("{VERSION_STRING}");
+    info!("{VERSION_STRING} - show help with --help");
 
-    match config::read_config("sharp.toml").await {
+    match config::read_config(args.config.unwrap_or(PathBuf::from("sharp.toml"))).await {
         Ok(config) => sharp(config).await,
         Err(e) => error!("{e}"),
     }
@@ -74,7 +91,7 @@ async fn sharp(config: SharpConfig) {
                                         res.map(|b| b.map_err(RoutingError::from).boxed_unsync())
                                     })
                             }
-                            (_, Some(cookie)) => {
+                            (_, Some(_)) => {
                                 info!("cookie was set, proxying...");
                                 // TODO: Check cookie
                                 gateway_service::service(req, client_addr, config.upstream)

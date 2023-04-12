@@ -2,6 +2,11 @@
 name = "sharp"
 version = "0.1.0"
 edition = "2021"
+description = "[s]elf-[h]osted [a]uthentication [r]everse [p]roxy"
+authors = ["Lennart Kloock <lennart.kloock@protonmail.com>"]
+license = "MIT"
+repository = "https://github.com/lennartkloock/sharp"
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -16,6 +21,8 @@ axum = { version = "0.6.12" }
 axum-extra = { version = "0.7.3", features = ["cookie"] }
 hyper = { version = "0.14.25", features = ["client"] }
 tower = { version = "0.4.13" }
+
+clap = { version = "4.2.1", features = ["derive"] }
 
 serde = { version = "1.0.160", features = ["derive"] }
 toml = "0.7.3"
