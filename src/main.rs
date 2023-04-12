@@ -1,3 +1,4 @@
+use crate::config::SharpConfig;
 use axum_extra::extract::CookieJar;
 use hyper::{
     body::HttpBody,
@@ -6,12 +7,13 @@ use hyper::{
 };
 use std::{convert::Infallible, net::SocketAddr};
 use tower::ServiceExt;
-use tracing::info;
+use tracing::{error, info};
 use tracing_subscriber::{filter::LevelFilter, EnvFilter};
 
 const VERSION_STRING: &str = concat!(env!("CARGO_PKG_NAME"), " v", env!("CARGO_PKG_VERSION"));
 
 mod app;
+mod config;
 mod exceptions;
 mod gateway_service;
 
@@ -29,17 +31,24 @@ async fn main() {
         .with_env_filter(
             EnvFilter::builder()
                 .with_default_directive(LevelFilter::INFO.into())
+                .with_env_var("SHARP_LOG")
                 .from_env_lossy(),
         )
         .init();
 
     info!("{VERSION_STRING}");
 
-    let in_addr: SocketAddr = ([127, 0, 0, 1], 3001).into();
-    let out_addr: SocketAddr = ([127, 0, 0, 1], 8000).into();
+    match config::read_config("sharp.toml").await {
+        Ok(config) => sharp(config).await,
+        Err(e) => error!("{e}"),
+    }
+}
+
+async fn sharp(config: SharpConfig) {
+    let in_addr = SocketAddr::new(config.address, config.port);
 
     info!("Listening on http://{}", in_addr);
-    info!("Proxying to http://{}", out_addr);
+    info!("Proxying to http://{}", config.upstream);
 
     let router = app::router();
 
@@ -49,17 +58,17 @@ async fn main() {
         .serve(make_service_fn(|socket: &AddrStream| {
             // Fixme: Are all the router clones necessary?
             let router = router.clone();
-            let remote_addr = socket.remote_addr();
+            let client_addr = socket.remote_addr();
             async move {
                 Ok::<_, Infallible>(service_fn(move |req| {
                     let router = router.clone();
                     async move {
-                        info!("{remote_addr} : {} {}", req.method(), req.uri());
+                        info!("{client_addr} : {} {}", req.method(), req.uri());
                         let cookies = CookieJar::from_headers(req.headers());
                         match (exceptions::is_exception(&req), cookies.get("SHARP_session")) {
                             (true, _) => {
                                 info!("`{}` is an exception, proxying...", req.uri());
-                                gateway_service::service(req, remote_addr, out_addr)
+                                gateway_service::service(req, client_addr, config.upstream)
                                     .await
                                     .map(|res| {
                                         res.map(|b| b.map_err(RoutingError::from).boxed_unsync())
@@ -68,7 +77,7 @@ async fn main() {
                             (_, Some(cookie)) => {
                                 info!("cookie was set, proxying...");
                                 // TODO: Check cookie
-                                gateway_service::service(req, remote_addr, out_addr)
+                                gateway_service::service(req, client_addr, config.upstream)
                                     .await
                                     .map(|res| {
                                         res.map(|b| b.map_err(RoutingError::from).boxed_unsync())
