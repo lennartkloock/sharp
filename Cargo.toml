@@ -9,6 +9,8 @@ edition = "2021"
 tracing = "0.1.37"
 tracing-subscriber = { version = "0.3.16", features = ["env-filter"] }
 
+thiserror = "1.0.40"
+
 tokio = { version = "1.27.0", features = ["rt-multi-thread", "macros", "net"] }
 axum = { version = "0.6.12" }
 axum-extra = { version = "0.7.3", features = ["cookie"] }
