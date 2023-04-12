@@ -58,7 +58,7 @@ async fn main() {
         )
         .init();
 
-    info!("{VERSION_STRING} - show help with --help");
+    info!("{VERSION_STRING} - show help with '--help'");
 
     let config_res = if args.check {
         config::read_config(|| SharpConfigBuilder::from_file(args.config)).await
@@ -93,32 +93,23 @@ async fn sharp(config: SharpConfig) {
                     async move {
                         info!("{client_addr} : {} {}", req.method(), req.uri());
                         let cookies = CookieJar::from_headers(req.headers());
-                        match (exceptions::is_exception(&req), cookies.get("SHARP_session")) {
-                            (true, _) => {
-                                info!("`{}` is an exception, proxying...", req.uri());
-                                gateway_service::service(req, client_addr, config.upstream)
-                                    .await
-                                    .map(|res| {
-                                        res.map(|b| b.map_err(RoutingError::from).boxed_unsync())
-                                    })
-                            }
-                            (_, Some(_)) => {
-                                info!("cookie was set, proxying...");
-                                // TODO: Check cookie
-                                gateway_service::service(req, client_addr, config.upstream)
-                                    .await
-                                    .map(|res| {
-                                        res.map(|b| b.map_err(RoutingError::from).boxed_unsync())
-                                    })
-                            }
-                            (_, _) => {
-                                info!("client couldn't authorize");
-                                Ok(router
-                                    .oneshot(req)
-                                    .await
-                                    .unwrap() // Is Infallible
-                                    .map(|b| b.map_err(RoutingError::from).boxed_unsync()))
-                            }
+                        let proxy_through = exceptions::is_exception(&req)
+                            || cookies.get("SHARP_session").map(|c| c.value() == "true")
+                                == Some(true);
+                        if proxy_through {
+                            info!("proxying...");
+                            gateway_service::service(req, client_addr, config.upstream)
+                                .await
+                                .map(|res| {
+                                    res.map(|b| b.map_err(RoutingError::from).boxed_unsync())
+                                })
+                        } else {
+                            info!("client couldn't authorize");
+                            Ok(router
+                                .oneshot(req)
+                                .await
+                                .unwrap() // Is Infallible
+                                .map(|b| b.map_err(RoutingError::from).boxed_unsync()))
                         }
                     }
                 }))
