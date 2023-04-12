@@ -1,4 +1,4 @@
-use crate::config::SharpConfig;
+use crate::config::{SharpConfig, SharpConfigBuilder};
 use axum_extra::extract::CookieJar;
 use clap::Parser;
 use hyper::{
@@ -8,7 +8,7 @@ use hyper::{
 };
 use std::{convert::Infallible, net::SocketAddr, path::PathBuf};
 use tower::ServiceExt;
-use tracing::{error, info};
+use tracing::{error, info, Level};
 use tracing_subscriber::{filter::LevelFilter, EnvFilter};
 
 const VERSION_STRING: &str = concat!(env!("CARGO_PKG_NAME"), " ", env!("CARGO_PKG_VERSION"));
@@ -27,8 +27,14 @@ mod gateway_service;
 #[command(author, version, about, long_about)]
 struct Args {
     /// Relative path to the config file
+    #[arg(long, default_value_os_t = PathBuf::from("sharp.toml"))]
+    config: PathBuf,
+    /// Log level
+    #[arg(short, long, default_value_t = Level::INFO)]
+    log_level: Level,
+    /// Check config file for errors
     #[arg(short, long)]
-    config: Option<PathBuf>,
+    check_config: bool,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -46,7 +52,7 @@ async fn main() {
     tracing_subscriber::fmt()
         .with_env_filter(
             EnvFilter::builder()
-                .with_default_directive(LevelFilter::INFO.into())
+                .with_default_directive(LevelFilter::from_level(args.log_level).into())
                 .with_env_var("SHARP_LOG")
                 .from_env_lossy(),
         )
@@ -54,7 +60,13 @@ async fn main() {
 
     info!("{VERSION_STRING} - show help with --help");
 
-    match config::read_config(args.config.unwrap_or(PathBuf::from("sharp.toml"))).await {
+    let config_res = if args.check_config {
+        config::read_config(|| SharpConfigBuilder::from_file(args.config)).await
+    } else {
+        config::read_run_config(args.config).await
+    };
+    match config_res {
+        Ok(_) if args.check_config => info!("config is OK"),
         Ok(config) => sharp(config).await,
         Err(e) => error!("{e}"),
     }

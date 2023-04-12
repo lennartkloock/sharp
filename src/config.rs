@@ -2,6 +2,7 @@ use derive_builder::Builder;
 use merge::Merge;
 use std::{
     env,
+    future::Future,
     net::{AddrParseError, IpAddr, SocketAddr},
     num::ParseIntError,
     path::Path,
@@ -37,7 +38,7 @@ pub enum ConfigError {
 }
 
 impl SharpConfigBuilder {
-    fn from_env() -> Result<Self, ConfigError> {
+    pub fn from_env() -> Result<Self, ConfigError> {
         info!("parsing config from environment variables");
         let address = match env::var("SHARP_ADDRESS").map(|s| s.parse()) {
             Ok(p) => Some(p?),
@@ -58,18 +59,46 @@ impl SharpConfigBuilder {
             exceptions: None,
         })
     }
+
+    pub async fn from_file<P: AsRef<Path>>(path: P) -> Result<Self, ConfigError> {
+        info!("parsing config file at `{}`", path.as_ref().display());
+        let str = tokio::fs::read_to_string(path).await?;
+        Ok(toml::from_str(&str)?)
+    }
 }
 
-pub async fn read_config<P: AsRef<Path>>(path: P) -> Result<SharpConfig, ConfigError> {
-    let mut config_builder = SharpConfigBuilder::from_env()?;
+pub async fn read_run_config<P: AsRef<Path>>(path: P) -> Result<SharpConfig, ConfigError> {
+    read_config_with_fallback(
+        || async { SharpConfigBuilder::from_env() },
+        || SharpConfigBuilder::from_file(path),
+    )
+    .await
+}
+
+pub async fn read_config<F, Fut>(main: F) -> Result<SharpConfig, ConfigError>
+where
+    F: FnOnce() -> Fut,
+    Fut: Future<Output = Result<SharpConfigBuilder, ConfigError>>,
+{
+    Ok(main().await?.build()?)
+}
+
+pub async fn read_config_with_fallback<FM, MFut, FF, FFut>(
+    main: FM,
+    fallback: FF,
+) -> Result<SharpConfig, ConfigError>
+where
+    FM: FnOnce() -> MFut,
+    MFut: Future<Output = Result<SharpConfigBuilder, ConfigError>>,
+    FF: FnOnce() -> FFut,
+    FFut: Future<Output = Result<SharpConfigBuilder, ConfigError>>,
+{
+    let mut config_builder = main().await?;
     match config_builder.build() {
         Ok(config) => Ok(config),
         Err(e) => {
             debug!("missing environment variables ({e})");
-            info!("parsing config file at `{}`", path.as_ref().display());
-            let str = tokio::fs::read_to_string(path).await?;
-            let file_config: SharpConfigBuilder = toml::from_str(&str)?;
-            config_builder.merge(file_config);
+            config_builder.merge(fallback().await?);
             Ok(config_builder.build()?)
         }
     }
