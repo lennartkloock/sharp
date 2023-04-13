@@ -9,8 +9,8 @@
     <style>
         :root {
             --primary-color: black;
-            --primary-bg-50: rgb(255 255 255 / 0.5);
-            --primary-bg-75: rgb(255 255 255 / 0.75);
+            --fields-bg: rgb(255 255 255 / 0.5);
+            --pane-bg: rgb(255 255 255 / 0.75);
 
             --accent-color: black;
 
@@ -18,6 +18,18 @@
             --button-bg: black;
 
             --background: url("https://images.pexels.com/photos/933054/pexels-photo-933054.jpeg");
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --primary-color: white;
+                --fields-bg: rgb(48 48 48);
+                --pane-bg: rgb(0 0 0 / 0.75);
+
+                --accent-color: white;
+
+                --button-color: black;
+                --button-bg: white;
+            }
         }
         {% match custom_css %}
             {% when Some with (css) %}
