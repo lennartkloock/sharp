@@ -1,0 +1,21 @@
+{% extends "bg-center-container.html" %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<style>{% include "form-styles.css" %}</style>
+<form method="post" action="/login" class="pane">
+    <h1 class="heading black">Login</h1>
+    <label for="email-field" class="sr-only">Email</label>
+    <input type="email" placeholder="Email" id="email-field" class="field" required>
+    <label for="password-field" class="sr-only">Password</label>
+    <div class="link-field-container">
+        <input type="password" placeholder="Password" id="password-field" class="field" required>
+        <a href="/forgot-password" class="light">Forgot your password?</a>
+    </div>
+    <div class="link-field-container">
+        <input type="submit" value="Log In" class="bold">
+        <p class="light">Not registered yet? <a href="/register" class="bold">Register</a></p>
+    </div>
+</form>
+{% endblock %}
