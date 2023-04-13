@@ -9,7 +9,7 @@
     width: 25rem;
 
     padding: 3rem;
-    background: var(--primary-bg-75);
+    background-color: var(--primary-bg-75);
     border-radius: 10px;
 
     display: flex;
@@ -34,7 +34,7 @@ input[type="submit"] {
 }
 
 .field {
-    background: var(--primary-bg-50);
+    background-color: var(--primary-bg-50);
     border-bottom: 2px solid black;
     border-radius: 5px;
 }
