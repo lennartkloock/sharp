@@ -1,11 +1,13 @@
 use axum::{Router, routing::get};
 use axum::extract::State;
+use axum::response::Redirect;
 use crate::config::CustomCss;
 
 mod templates;
 
 pub fn router() -> Router<Option<CustomCss>> {
     Router::new()
+        .route("/", get(|| async { Redirect::to("/login") }))
         .route("/login", get(login))
         .route("/register", get(register))
         .route("/reset-password", get(reset_password))
