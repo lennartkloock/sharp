@@ -5,17 +5,17 @@
 {% block content %}
 <style>{% include "form-styles.css" %}</style>
 <form method="post" action="/login" class="pane">
-    <h1 class="heading black">Login</h1>
-    <label for="email-field" class="sr-only">Email</label>
-    <input type="email" placeholder="Email" id="email-field" class="field" required>
-    <label for="password-field" class="sr-only">Password</label>
+    <h1 class="heading black">{{ i18n.login_heading() }}</h1>
+    <label for="email-field" class="sr-only">{{ i18n.email() }}</label>
+    <input type="email" placeholder="{{ i18n.email() }}" id="email-field" class="field" required>
+    <label for="password-field" class="sr-only">{{ i18n.password() }}</label>
     <div class="link-field-container">
-        <input type="password" placeholder="Password" id="password-field" class="field" required>
-        <a href="/reset-password" class="light">Forgot your password?</a>
+        <input type="password" placeholder="{{ i18n.password() }}" id="password-field" class="field" required>
+        <a href="/reset-password" class="light">{{ i18n.login_forgot_password_question() }}</a>
     </div>
     <div class="link-field-container">
-        <input type="submit" value="Log In" class="bold">
-        <p class="light">Not registered yet? <a href="/register" class="bold">Register</a></p>
+        <input type="submit" value="{{ i18n.login_button() }}" class="bold">
+        <p class="light">{{ i18n.login_registered_question() }} <a href="/register" class="bold">{{ i18n.login_register_link() }}</a></p>
     </div>
 </form>
 {% endblock %}

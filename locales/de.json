@@ -1,0 +1,16 @@
+{
+    "email": "Email",
+    "password": "Passwort",
+
+    "login_heading": "Anmelden",
+    "login_forgot_password_question": "Passwort vergessen?",
+    "login_registered_question": "Noch nicht registriert?",
+    "login_button": "Anmelden",
+    "login_register_link": "Registrieren",
+
+    "register_heading": "Registrieren",
+    "register_repeat_password": "Passwort wiederholen",
+    "register_login_question": "Schon registriert?",
+    "register_login_link": "Anmelden",
+    "register_button": "Registrieren"
+}

@@ -16,7 +16,10 @@ const VERSION_STRING: &str = concat!(env!("CARGO_PKG_NAME"), " ", env!("CARGO_PK
 mod app;
 mod config;
 mod exceptions;
+mod i18n;
 mod gateway_service;
+
+// rust_i18n::i18n!("locales");
 
 // TODO: Improve slogan, include in README
 

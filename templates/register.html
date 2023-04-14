@@ -5,16 +5,16 @@
 {% block content %}
 <style>{% include "form-styles.css" %}</style>
 <form method="post" action="/register" class="pane">
-    <h1 class="heading black">Register</h1>
-    <label for="email-field" class="sr-only">Email</label>
-    <input type="email" placeholder="Email" id="email-field" class="field" required>
-    <label for="password-field" class="sr-only">Password</label>
-    <input type="password" placeholder="Password" id="password-field" class="field" required>
-    <label for="repeat-password-field" class="sr-only">Password</label>
-    <input type="password" placeholder="Repeat Password" id="repeat-password-field" class="field" required>
+    <h1 class="heading black">{{ i18n.register_heading() }}</h1>
+    <label for="email-field" class="sr-only">{{ i18n.email() }}</label>
+    <input type="email" placeholder="{{ i18n.email() }}" id="email-field" class="field" required>
+    <label for="password-field" class="sr-only">{{ i18n.password() }}</label>
+    <input type="password" placeholder="{{ i18n.password() }}" id="password-field" class="field" required>
+    <label for="repeat-password-field" class="sr-only">{{ i18n.register_repeat_password() }}</label>
+    <input type="password" placeholder="{{ i18n.register_repeat_password() }}" id="repeat-password-field" class="field" required>
     <div class="link-field-container">
-        <input type="submit" value="Register" class="bold">
-        <p class="light">Already registered? <a href="/login" class="bold">Login</a></p>
+        <input type="submit" value="{{ i18n.register_button() }}" class="bold">
+        <p class="light">{{ i18n.register_login_question() }} <a href="/login" class="bold">{{ i18n.register_login_link() }}</a></p>
     </div>
 </form>
 {% endblock %}
