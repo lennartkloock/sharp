@@ -11,3 +11,9 @@ pub struct Login {
 pub struct Register {
     pub custom_css: Option<CustomCss>,
 }
+
+#[derive(askama::Template)]
+#[template(path = "reset-password.html")]
+pub struct ResetPassword {
+    pub custom_css: Option<CustomCss>,
+}
