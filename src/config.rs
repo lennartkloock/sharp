@@ -8,9 +8,44 @@ use std::{
     path::Path,
     str::FromStr,
 };
+use std::fmt::{Debug, Display, Formatter};
+use std::ops::Deref;
+use std::path::PathBuf;
 use tracing::{debug, info};
 
-#[derive(Builder)]
+#[derive(Clone, Debug)]
+pub struct CustomCss(String);
+
+impl Deref for CustomCss {
+    type Target = str;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl Display for CustomCss {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(&self.0, f)
+    }
+}
+
+impl CustomCss {
+    fn from_path_option<P: AsRef<Path>>(path: &Option<P>) -> Result<Option<Self>, std::io::Error> {
+        match path {
+            None => Ok(None),
+            Some(p) => Ok(Some(Self(std::fs::read_to_string(p)?))),
+        }
+    }
+}
+
+impl From<std::io::Error> for SharpConfigBuilderError {
+    fn from(e: std::io::Error) -> Self {
+        Self::ValidationError(format!("failed to read custom css file: {e}"))
+    }
+}
+
+#[derive(Debug, Builder)]
 #[builder(derive(serde::Deserialize, merge::Merge))]
 pub struct SharpConfig {
     #[builder(default = "IpAddr::from([127, 0, 0, 1])")]
@@ -21,6 +56,8 @@ pub struct SharpConfig {
         default = "vec![\"/favicon.ico\".to_string(), \"/robots.txt\".to_string(), \"/sitemap.xml\".to_string()]"
     )]
     pub exceptions: Vec<String>,
+    #[builder(field(type = "Option<PathBuf>", build = "CustomCss::from_path_option(&self.custom_css)?"))]
+    pub custom_css: Option<CustomCss>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -57,6 +94,7 @@ impl SharpConfigBuilder {
             port,
             upstream,
             exceptions: None,
+            custom_css: None,
         })
     }
 

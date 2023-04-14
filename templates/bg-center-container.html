@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+    .bg-container {
+        height: 100svh; /* Don't use vh, doesn't work on mobile */
+
+        background: var(--background);
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: cover;
+    }
+    .center-container {
+        height: 100%;
+
+        display: grid;
+        place-items: center;
+
+        backdrop-filter: brightness(50%);
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="bg-container">
+    <div class="center-container">
+        {% block content %}{% endblock %}
+    </div>
+</div>
+{% endblock %}

@@ -1,5 +1,26 @@
-use axum::{http::StatusCode, routing::get, Router};
+use axum::{Router, routing::get};
+use axum::extract::State;
+use axum::response::Redirect;
+use crate::config::CustomCss;
 
-pub fn router() -> Router {
-    Router::new().fallback(get(|| async { (StatusCode::UNAUTHORIZED, "unauthorized") }))
+mod templates;
+
+pub fn router() -> Router<Option<CustomCss>> {
+    Router::new()
+        .route("/", get(|| async { Redirect::to("/login") }))
+        .route("/login", get(login))
+        .route("/register", get(register))
+        .route("/reset-password", get(reset_password))
+}
+
+async fn login(State(custom_css): State<Option<CustomCss>>) -> templates::Login {
+    templates::Login { custom_css }
+}
+
+async fn register(State(custom_css): State<Option<CustomCss>>) -> templates::Register {
+    templates::Register { custom_css }
+}
+
+async fn reset_password(State(custom_css): State<Option<CustomCss>>) -> templates::ResetPassword {
+    templates::ResetPassword { custom_css }
 }

@@ -8,7 +8,7 @@ use hyper::{
 };
 use std::{convert::Infallible, net::SocketAddr, path::PathBuf};
 use tower::ServiceExt;
-use tracing::{error, info, Level};
+use tracing::{debug, error, info, Level};
 use tracing_subscriber::{filter::LevelFilter, EnvFilter};
 
 const VERSION_STRING: &str = concat!(env!("CARGO_PKG_NAME"), " ", env!("CARGO_PKG_VERSION"));
@@ -66,8 +66,14 @@ async fn main() {
         config::read_run_config(args.config).await
     };
     match config_res {
-        Ok(_) if args.check => info!("config is OK"),
-        Ok(config) => sharp(config).await,
+        Ok(config) => {
+            debug!("read config: {config:?}");
+            if args.check {
+                info!("config is OK");
+            } else {
+                sharp(config).await;
+            }
+        },
         Err(e) => error!("{e}"),
     }
 }
@@ -78,7 +84,7 @@ async fn sharp(config: SharpConfig) {
     info!("Listening on http://{}", in_addr);
     info!("Proxying to http://{}", config.upstream);
 
-    let router = app::router();
+    let router = app::router().with_state(config.custom_css);
 
     axum::Server::bind(&in_addr)
         .http1_preserve_header_case(true)
