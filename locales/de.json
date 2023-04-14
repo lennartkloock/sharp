@@ -15,6 +15,6 @@
     "register_button": "Registrieren",
 
     "reset_heading": "Passwort Zurücksetzen",
-    "reset_button": "Zurücksetzungsmail schicken",
+    "reset_button": "Bestätigungsmail schicken",
     "reset_login_link": "Zurück zur Anmeldung"
 }
