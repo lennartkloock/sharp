@@ -12,5 +12,9 @@
     "register_repeat_password": "Passwort wiederholen",
     "register_login_question": "Schon registriert?",
     "register_login_link": "Anmelden",
-    "register_button": "Registrieren"
+    "register_button": "Registrieren",
+
+    "reset_heading": "Passwort Zurücksetzen",
+    "reset_button": "Zurücksetzungsmail schicken",
+    "reset_login_link": "Zurück zur Anmeldung"
 }
