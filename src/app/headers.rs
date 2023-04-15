@@ -1,10 +1,14 @@
+use crate::i18n::I18n;
 use axum::{
     headers::{Error, Header, HeaderName, HeaderValue},
+    http::{header::CONTENT_LANGUAGE, StatusCode},
+    response::{IntoResponseParts, ResponseParts},
 };
-use std::str::FromStr;
+use std::{ops::Deref, str::FromStr};
+use tracing::debug;
 use unic_langid::LanguageIdentifier;
 
-pub struct AcceptLanguage(pub Vec<LanguageIdentifier>);
+pub struct AcceptLanguage(Vec<LanguageIdentifier>);
 
 impl Header for AcceptLanguage {
     fn name() -> &'static HeaderName {
@@ -17,17 +21,68 @@ impl Header for AcceptLanguage {
         I: Iterator<Item = &'i HeaderValue>,
     {
         let value = values.next().ok_or_else(Error::invalid)?;
-        Ok(Self(
-            value
-                .to_str()
-                .map_err(|_| Error::invalid())?
-                .split(';')
-                .filter_map(|lang| LanguageIdentifier::from_str(lang).ok())
-                .collect(),
-        ))
+        let lang_ids: Vec<LanguageIdentifier> = value
+            .to_str()
+            .map_err(|_| Error::invalid())?
+            .split(',')
+            .filter_map(|lang| {
+                lang.split(';')
+                    .next()
+                    .and_then(|l| LanguageIdentifier::from_str(l).ok())
+            })
+            .collect();
+        debug!(
+            "client requests languages: {:?}",
+            lang_ids
+                .iter()
+                .map(|id| id.to_string())
+                .collect::<Vec<String>>()
+        );
+        Ok(Self(lang_ids))
     }
 
     fn encode<E: Extend<HeaderValue>>(&self, _: &mut E) {
         unimplemented!()
+    }
+}
+
+impl Deref for AcceptLanguage {
+    type Target = Vec<LanguageIdentifier>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl From<AcceptLanguage> for I18n {
+    fn from(lang: AcceptLanguage) -> Self {
+        lang.iter()
+            .find_map(I18n::from_lang_id)
+            .unwrap_or_default()
+    }
+}
+
+pub struct ContentLanguage(LanguageIdentifier);
+
+impl From<LanguageIdentifier> for ContentLanguage {
+    fn from(id: LanguageIdentifier) -> Self {
+        Self(id)
+    }
+}
+
+impl IntoResponseParts for ContentLanguage {
+    type Error = (StatusCode, String);
+
+    fn into_response_parts(self, mut res: ResponseParts) -> Result<ResponseParts, Self::Error> {
+        match HeaderValue::try_from(&self.0.to_string()) {
+            Ok(value) => {
+                res.headers_mut().insert(CONTENT_LANGUAGE, value);
+                Ok(res)
+            }
+            Err(e) => Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("failed to convert lang id to header value: {e}"),
+            )),
+        }
     }
 }
