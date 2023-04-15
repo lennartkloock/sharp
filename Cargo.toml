@@ -17,7 +17,7 @@ tracing-subscriber = { version = "0.3.16", features = ["env-filter"] }
 thiserror = "1.0.40"
 
 tokio = { version = "1.27.0", features = ["rt-multi-thread", "macros", "fs"] }
-axum = { version = "0.6.12" }
+axum = { version = "0.6.12", features = ["headers"] }
 axum-extra = { version = "0.7.3", features = ["cookie"] }
 hyper = { version = "0.14.25", features = ["client"] }
 tower = { version = "0.4.13" }
@@ -29,7 +29,7 @@ toml = "0.7.3"
 derive_builder = "0.12.0"
 merge = "0.1.0"
 
-#i18n_codegen = "0.1.1"
+unic-langid = "0.9.1"
 i18n_langid_codegen = { path = "../i18n_langid_codegen" }
 
 askama = { version = "0.12.0", features = ["with-axum"] }

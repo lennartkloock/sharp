@@ -2,15 +2,14 @@ use derive_builder::Builder;
 use merge::Merge;
 use std::{
     env,
+    fmt::{Debug, Display, Formatter},
     future::Future,
     net::{AddrParseError, IpAddr, SocketAddr},
     num::ParseIntError,
-    path::Path,
+    ops::Deref,
+    path::{Path, PathBuf},
     str::FromStr,
 };
-use std::fmt::{Debug, Display, Formatter};
-use std::ops::Deref;
-use std::path::PathBuf;
 use tracing::{debug, info};
 
 #[derive(Clone, Debug)]
@@ -56,7 +55,10 @@ pub struct SharpConfig {
         default = "vec![\"/favicon.ico\".to_string(), \"/robots.txt\".to_string(), \"/sitemap.xml\".to_string()]"
     )]
     pub exceptions: Vec<String>,
-    #[builder(field(type = "Option<PathBuf>", build = "CustomCss::from_path_option(&self.custom_css)?"))]
+    #[builder(field(
+        type = "Option<PathBuf>",
+        build = "CustomCss::from_path_option(&self.custom_css)?"
+    ))]
     pub custom_css: Option<CustomCss>,
 }
 

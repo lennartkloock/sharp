@@ -16,10 +16,12 @@ const VERSION_STRING: &str = concat!(env!("CARGO_PKG_NAME"), " ", env!("CARGO_PK
 mod app;
 mod config;
 mod exceptions;
-mod i18n;
-mod gateway_service;
+mod i18n {
+    use i18n_langid_codegen::i18n;
 
-// rust_i18n::i18n!("locales");
+    i18n!("locales");
+}
+mod gateway_service;
 
 // TODO: Improve slogan, include in README
 
@@ -76,7 +78,7 @@ async fn main() {
             } else {
                 sharp(config).await;
             }
-        },
+        }
         Err(e) => error!("{e}"),
     }
 }

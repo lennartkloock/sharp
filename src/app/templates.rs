@@ -1,5 +1,4 @@
-use crate::config::CustomCss;
-use crate::i18n;
+use crate::{config::CustomCss, i18n};
 
 #[derive(askama::Template)]
 #[template(path = "login.html")]
