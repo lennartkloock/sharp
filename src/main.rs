@@ -17,9 +17,7 @@ mod app;
 mod config;
 mod exceptions;
 mod i18n {
-    use i18n_langid_codegen::i18n;
-
-    i18n!("locales");
+    i18n_langid_codegen::i18n!("locales");
 }
 mod gateway_service;
 
