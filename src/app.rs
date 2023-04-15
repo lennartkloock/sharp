@@ -2,7 +2,7 @@ use axum::{Router, routing::get};
 use axum::extract::State;
 use axum::response::Redirect;
 use crate::config::CustomCss;
-use crate::i18n::Locale;
+use crate::i18n::I18n;
 
 mod templates;
 
@@ -15,13 +15,13 @@ pub fn router() -> Router<Option<CustomCss>> {
 }
 
 async fn login(State(custom_css): State<Option<CustomCss>>) -> templates::Login {
-    templates::Login { i18n: Locale::De, custom_css }
+    templates::Login { i18n: I18n::de(), custom_css }
 }
 
 async fn register(State(custom_css): State<Option<CustomCss>>) -> templates::Register {
-    templates::Register { i18n: Locale::De,custom_css }
+    templates::Register { i18n: I18n::de(), custom_css }
 }
 
 async fn reset_password(State(custom_css): State<Option<CustomCss>>) -> templates::ResetPassword {
-    templates::ResetPassword { i18n: Locale::De,custom_css }
+    templates::ResetPassword { i18n: I18n::de(), custom_css }
 }

@@ -1,0 +1,22 @@
+email: Email
+password: Password
+
+login:
+    heading: Login
+    forgot_password_question: Forgot your password?
+    registered_question: Not registered yet?
+    button: Log In
+    register_link: Register
+
+register:
+    heading: Register
+    repeat_password: Repeat Password
+    login_question: Already registered?
+    login_link: Login
+    button: Register
+
+reset:
+    heading: Reset Password
+    button: Send Reset Mail
+    login_link: Return to Login
+    

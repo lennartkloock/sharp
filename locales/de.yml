@@ -1,0 +1,20 @@
+email: Email
+password: Passwort
+login:
+    heading: Anmelden
+    forgot_password_question: Passwort vergessen?
+    registered_question: Noch nicht registriert?
+    button: Anmelden
+    register_link: Registrieren
+
+register:
+    heading: Registrieren
+    repeat_password: Passwort wiederholen
+    login_question: Schon registriert?
+    login_link: Anmelden
+    button: Registrieren
+
+reset:
+    heading: Passwort Zurücksetzen
+    button: Bestätigungsmail schicken
+    login_link: Zurück zur Anmeldung
