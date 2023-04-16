@@ -22,4 +22,3 @@ reset:
     heading: Reset Password
     button: Send Reset Mail
     login_link: Return to Login
-    
