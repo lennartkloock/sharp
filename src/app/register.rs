@@ -20,11 +20,18 @@ pub async fn register(
     TypedHeader(accept_lang): TypedHeader<AcceptLanguage>,
 ) -> impl IntoResponse {
     let i18n: I18n = accept_lang.into();
-    let flashes = incoming_flashes.iter().map(|(l, m)| (l, m.to_string())).collect();
+    let flashes = incoming_flashes
+        .iter()
+        .map(|(l, m)| (l, m.to_string()))
+        .collect();
     (
         incoming_flashes,
         ContentLanguage::from(i18n.lang_id.clone()),
-        templates::Register { i18n, custom_css, flashes },
+        templates::Register {
+            i18n,
+            custom_css,
+            flashes,
+        },
     )
 }
 
@@ -64,7 +71,15 @@ pub async fn submit_register(
     };
     if let Err(e) = db.insert_user(new_user).await {
         // TODO: replace replace
-        return (flash.error(i18n.register.errors.storage_error.replace("$error", &format!("{e}"))), Redirect::to("/register"));
+        return (
+            flash.error(
+                i18n.register
+                    .errors
+                    .storage_error
+                    .replace("$error", &format!("{e}")),
+            ),
+            Redirect::to("/register"),
+        );
     }
     (flash, Redirect::to("/"))
 }
