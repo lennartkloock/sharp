@@ -58,7 +58,7 @@ mod test {
 
     #[tokio::test]
     async fn insert_user() {
-        let pool = DbPool::connect("sqlite:memory:").await.unwrap();
+        let pool = DbPool::connect("sqlite::memory:").await.unwrap();
         println!(
             "User id: {}",
             pool.insert_user(NewUser {
