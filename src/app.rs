@@ -25,6 +25,7 @@ pub fn router() -> Router<AppState> {
             get(register::register).post(register::submit_register),
         )
         .route("/reset-password", get(reset_password))
+        .fallback(get(|| async { Redirect::to("/") }))
 }
 
 async fn login(
