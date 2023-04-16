@@ -11,6 +11,7 @@ use hyper::{
     service::{make_service_fn, service_fn},
 };
 use std::{convert::Infallible, net::SocketAddr, path::PathBuf};
+use std::sync::Arc;
 use tower::ServiceExt;
 use tracing::{debug, error, info, Level};
 use tracing_subscriber::{filter::LevelFilter, EnvFilter};
@@ -104,7 +105,7 @@ async fn main() {
 #[derive(Clone)]
 pub struct AppState {
     db: DbPool,
-    custom_css: Option<CustomCss>,
+    config: Arc<SharpConfig>,
     flash_config: axum_flash::Config,
 }
 
@@ -114,9 +115,15 @@ impl FromRef<AppState> for DbPool {
     }
 }
 
+impl FromRef<AppState> for Arc<SharpConfig> {
+    fn from_ref(input: &AppState) -> Self {
+        Arc::clone(&input.config)
+    }
+}
+
 impl FromRef<AppState> for Option<CustomCss> {
     fn from_ref(input: &AppState) -> Self {
-        input.custom_css.clone()
+        input.config.custom_css.clone()
     }
 }
 
@@ -134,7 +141,7 @@ async fn sharp(config: SharpConfig, db: DbPool) {
 
     let router = app::router().with_state(AppState {
         db,
-        custom_css: config.custom_css,
+        config: Arc::new(config.clone()),
         flash_config: axum_flash::Config::new(axum_flash::Key::generate()),
     });
 

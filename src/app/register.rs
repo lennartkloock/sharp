@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use crate::{
     app::{
         headers::{AcceptLanguage, ContentLanguage},
@@ -13,6 +14,7 @@ use axum::{
     Form, TypedHeader,
 };
 use axum_flash::{Flash, IncomingFlashes};
+use crate::config::SharpConfig;
 
 pub async fn register(
     State(custom_css): State<Option<CustomCss>>,
@@ -61,6 +63,7 @@ impl TryFrom<RegisterData> for NewUser {
 
 pub async fn submit_register(
     State(db): State<DbPool>,
+    State(config): State<Arc<SharpConfig>>,
     TypedHeader(accept_lang): TypedHeader<AcceptLanguage>,
     flash: Flash,
     Form(new_user): Form<RegisterData>,
@@ -72,5 +75,5 @@ pub async fn submit_register(
     if let Err(e) = db.insert_user(new_user).await {
         return (flash.error(format!("{e}")), Redirect::to("/register"));
     }
-    (flash, Redirect::to("/"))
+    (flash, Redirect::to(&config.redirect_url))
 }

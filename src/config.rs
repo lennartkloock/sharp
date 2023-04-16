@@ -44,7 +44,7 @@ impl From<std::io::Error> for SharpConfigBuilderError {
     }
 }
 
-#[derive(Debug, Builder)]
+#[derive(Clone, Debug, Builder)]
 #[builder(derive(serde::Deserialize, merge::Merge))]
 pub struct SharpConfig {
     #[builder(default = "IpAddr::from([127, 0, 0, 1])")]
@@ -61,6 +61,8 @@ pub struct SharpConfig {
         build = "CustomCss::from_path_option(&self.custom_css)?"
     ))]
     pub custom_css: Option<CustomCss>,
+    #[builder(default = "String::from(\"/\")")]
+    pub redirect_url: String,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -99,6 +101,7 @@ impl SharpConfigBuilder {
             database_url: env::var("SHARP_DATABASE_URL").ok(),
             exceptions: None,
             custom_css: None,
+            redirect_url: None,
         })
     }
 
