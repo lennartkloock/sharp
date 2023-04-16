@@ -20,6 +20,7 @@ mod i18n {
     i18n_langid_codegen::i18n!("locales");
 }
 mod gateway_service;
+mod storage;
 
 // TODO: Improve slogan, include in README
 
