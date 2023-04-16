@@ -10,15 +10,18 @@ use std::{convert::Infallible, net::SocketAddr, path::PathBuf};
 use tower::ServiceExt;
 use tracing::{debug, error, info, Level};
 use tracing_subscriber::{filter::LevelFilter, EnvFilter};
+use crate::storage::DbPool;
 
 const VERSION_STRING: &str = concat!(env!("CARGO_PKG_NAME"), " ", env!("CARGO_PKG_VERSION"));
 
 mod app;
 mod config;
 mod exceptions;
+
 mod i18n {
     i18n_langid_codegen::i18n!("locales");
 }
+
 mod gateway_service;
 mod storage;
 
@@ -39,6 +42,9 @@ struct Args {
     /// Check config file for errors
     #[arg(long)]
     check: bool,
+    /// Create the necessary tables in the database
+    #[arg(long)]
+    setup_db: bool,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -72,10 +78,20 @@ async fn main() {
     match config_res {
         Ok(config) => {
             debug!("read config: {config:?}");
-            if args.check {
-                info!("config is OK");
-            } else {
-                sharp(config).await;
+            match DbPool::connect(&config.database_url).await {
+                Ok(db) if args.check || args.setup_db => {
+                    if args.check {
+                        info!("config is OK");
+                    }
+                    if args.setup_db {
+                        match db.setup().await {
+                            Ok(_) => info!("successfully set up database"),
+                            Err(e) => error!("failed to setup database: {e}"),
+                        }
+                    }
+                }
+                Ok(_) => sharp(config).await,
+                Err(e) => error!("failed to connect to database: {e}"),
             }
         }
         Err(e) => error!("{e}"),
@@ -105,7 +121,7 @@ async fn sharp(config: SharpConfig) {
                         let cookies = CookieJar::from_headers(req.headers());
                         let proxy_through = exceptions::is_exception(&req)
                             || cookies.get("SHARP_session").map(|c| c.value() == "true")
-                                == Some(true);
+                            == Some(true);
                         if proxy_through {
                             info!("proxying...");
                             gateway_service::service(req, client_addr, config.upstream)

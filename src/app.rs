@@ -32,6 +32,10 @@ async fn login(
     )
 }
 
+// async fn submit_login(Form(login): Form<NewUser>, State(db): State<DbPool>) -> Redirect {
+//     Redirect::to("/")
+// }
+
 async fn register(
     State(custom_css): State<Option<CustomCss>>,
     TypedHeader(accept_lang): TypedHeader<AcceptLanguage>,

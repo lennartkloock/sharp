@@ -51,6 +51,7 @@ pub struct SharpConfig {
     pub address: IpAddr,
     pub port: u16,
     pub upstream: SocketAddr,
+    pub database_url: String,
     #[builder(
         default = "vec![\"/favicon.ico\".to_string(), \"/robots.txt\".to_string(), \"/sitemap.xml\".to_string()]"
     )]
@@ -80,7 +81,7 @@ impl SharpConfigBuilder {
     pub fn from_env() -> Result<Self, ConfigError> {
         info!("parsing config from environment variables");
         let address = match env::var("SHARP_ADDRESS").map(|s| s.parse()) {
-            Ok(p) => Some(p?),
+            Ok(a) => Some(a?),
             Err(_) => None,
         };
         let port = match env::var("SHARP_PORT").map(|s| u16::from_str(&s)) {
@@ -88,13 +89,14 @@ impl SharpConfigBuilder {
             Err(_) => None,
         };
         let upstream = match env::var("SHARP_UPSTREAM").map(|s| s.parse()) {
-            Ok(p) => Some(p?),
+            Ok(u) => Some(u?),
             Err(_) => None,
         };
         Ok(Self {
             address,
             port,
             upstream,
+            database_url: env::var("SHARP_DATABASE_URL").ok(),
             exceptions: None,
             custom_css: None,
         })

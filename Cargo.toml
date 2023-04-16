@@ -17,7 +17,7 @@ tracing-subscriber = { version = "0.3.16", features = ["env-filter"] }
 thiserror = "1.0.40"
 
 tokio = { version = "1.27.0", features = ["rt-multi-thread", "macros", "fs"] }
-axum = { version = "0.6.12", features = ["headers"] }
+axum = { version = "0.6.12", features = ["headers", "form"] }
 axum-extra = { version = "0.7.3", features = ["cookie"] }
 hyper = { version = "0.14.25", features = ["client"] }
 tower = { version = "0.4.13" }
@@ -34,3 +34,6 @@ i18n_langid_codegen = "0.1.0"
 
 askama = { version = "0.12.0", features = ["with-axum"] }
 askama_axum = "0.3.0"
+
+sqlx = { version = "0.6.3", features = ["runtime-tokio-rustls", "any", "all-databases"] }
+password-hash = "0.5.0"
