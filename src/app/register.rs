@@ -70,16 +70,7 @@ pub async fn submit_register(
         return (flash.error(i18n.register.errors.password_mismatch), Redirect::to("/register"));
     };
     if let Err(e) = db.insert_user(new_user).await {
-        // TODO: replace replace
-        return (
-            flash.error(
-                i18n.register
-                    .errors
-                    .storage_error
-                    .replace("$error", &format!("{e}")),
-            ),
-            Redirect::to("/register"),
-        );
+        return (flash.error(format!("{e}")), Redirect::to("/register"));
     }
     (flash, Redirect::to("/"))
 }

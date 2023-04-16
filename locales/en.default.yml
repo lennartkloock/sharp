@@ -16,7 +16,6 @@ register:
     button: Register
     errors:
         password_mismatch: The passwords do not match
-        storage_error: "Storage error: $error"
 
 reset:
     heading: Reset Password
