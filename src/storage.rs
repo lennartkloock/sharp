@@ -25,6 +25,7 @@ impl DbPool {
 #[cfg(test)]
 mod test {
     use crate::storage::{DbPool, NewUser};
+    use std::env;
 
     #[tokio::test]
     async fn fetch_test() {
@@ -58,12 +59,18 @@ mod test {
 
     #[tokio::test]
     async fn insert_user() {
-        let pool = DbPool::connect("sqlite::memory:").await.unwrap();
+        let is_ci = env::var("CI").map(|v| v == "true").unwrap_or(false);
+        let url = if is_ci {
+            "sqlite::memory:"
+        } else {
+            "sqlite:sharp-test.sqlite"
+        };
+        let pool = DbPool::connect(url).await.unwrap();
         println!(
             "User id: {}",
             pool.insert_user(NewUser {
                 email: "USER".to_string(),
-                username: None,
+                username: Some("USERNAME".to_string()),
                 password: "TESTPASS".to_string()
             })
             .await

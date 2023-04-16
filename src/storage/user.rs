@@ -2,6 +2,11 @@ use crate::storage::{
     error::{StorageError, StorageResult},
     DbPool,
 };
+use argon2::{
+    password_hash,
+    password_hash::{rand_core::OsRng, SaltString},
+    Argon2, PasswordHasher,
+};
 use sqlx::any::AnyKind;
 use tracing::info;
 
@@ -51,11 +56,21 @@ pub struct NewUser {
 
 impl DbPool {
     pub async fn insert_user(&self, new_user: NewUser) -> StorageResult<UserId> {
-        let res = sqlx::query("INSERT INTO users (email, password_hash) VALUES ($1, $2)")
-            .bind(new_user.email)
-            .bind(new_user.password)
-            .execute(&self.0)
-            .await?;
+        let pass_hash = hash_password(&new_user.password).map_err(StorageError::PasswordHashing)?;
+        let res =
+            sqlx::query("INSERT INTO users (email, username, password_hash) VALUES (?, ?, ?)")
+                .bind(new_user.email)
+                .bind(new_user.username)
+                .bind(pass_hash)
+                .execute(&self.0)
+                .await?;
         res.last_insert_id().ok_or(StorageError::NoLastInsertId)
     }
+}
+
+fn hash_password(password: &str) -> password_hash::Result<String> {
+    let salt = SaltString::generate(&mut OsRng);
+    Argon2::default()
+        .hash_password(password.as_bytes(), &salt)
+        .map(|h| h.to_string())
 }
