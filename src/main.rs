@@ -1,7 +1,8 @@
 use crate::{
-    config::{SharpConfig, SharpConfigBuilder},
+    config::{CustomCss, SharpConfig, SharpConfigBuilder},
     storage::DbPool,
 };
+use axum::extract::FromRef;
 use axum_extra::extract::CookieJar;
 use clap::Parser;
 use hyper::{
@@ -92,7 +93,7 @@ async fn main() {
                         }
                     }
                 }
-                Ok(_) => sharp(config).await,
+                Ok(db) => sharp(config, db).await,
                 Err(e) => error!("failed to connect to database: {e}"),
             }
         }
@@ -100,13 +101,42 @@ async fn main() {
     }
 }
 
-async fn sharp(config: SharpConfig) {
+#[derive(Clone)]
+pub struct AppState {
+    db: DbPool,
+    custom_css: Option<CustomCss>,
+    flash_config: axum_flash::Config,
+}
+
+impl FromRef<AppState> for DbPool {
+    fn from_ref(input: &AppState) -> Self {
+        input.db.clone()
+    }
+}
+
+impl FromRef<AppState> for Option<CustomCss> {
+    fn from_ref(input: &AppState) -> Self {
+        input.custom_css.clone()
+    }
+}
+
+impl FromRef<AppState> for axum_flash::Config {
+    fn from_ref(input: &AppState) -> Self {
+        input.flash_config.clone()
+    }
+}
+
+async fn sharp(config: SharpConfig, db: DbPool) {
     let in_addr = SocketAddr::new(config.address, config.port);
 
     info!("Listening on http://{}", in_addr);
     info!("Proxying to http://{}", config.upstream);
 
-    let router = app::router().with_state(config.custom_css);
+    let router = app::router().with_state(AppState {
+        db,
+        custom_css: config.custom_css,
+        flash_config: axum_flash::Config::new(axum_flash::Key::generate()),
+    });
 
     axum::Server::bind(&in_addr)
         .http1_preserve_header_case(true)

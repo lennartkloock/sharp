@@ -19,6 +19,7 @@ thiserror = "1.0.40"
 tokio = { version = "1.27.0", features = ["rt-multi-thread", "macros", "fs"] }
 axum = { version = "0.6.12", features = ["headers", "form"] }
 axum-extra = { version = "0.7.3", features = ["cookie"] }
+axum-flash = "0.6.0"
 hyper = { version = "0.14.25", features = ["client"] }
 tower = { version = "0.4.13" }
 

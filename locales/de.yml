@@ -13,6 +13,9 @@ register:
     login_question: Schon registriert?
     login_link: Anmelden
     button: Registrieren
+    errors:
+        password_mismatch: Die Passwörter stimmen nicht überein
+        storage_error: "Speicherfehler: $error"
 
 reset:
     heading: Passwort Zurücksetzen

@@ -39,7 +39,7 @@ pub async fn setup(db: &DbPool) -> sqlx::Result<()> {
     sqlx::query(sql).execute(&db.0).await.map(|_| ())
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, sqlx::FromRow)]
 pub struct User {
     pub id: UserId,
     pub email: String,
@@ -59,12 +59,25 @@ impl DbPool {
         let pass_hash = hash_password(&new_user.password).map_err(StorageError::PasswordHashing)?;
         let res =
             sqlx::query("INSERT INTO users (email, username, password_hash) VALUES (?, ?, ?)")
-                .bind(new_user.email)
+                .bind(new_user.email.to_lowercase())
                 .bind(new_user.username)
                 .bind(pass_hash)
                 .execute(&self.0)
                 .await?;
-        res.last_insert_id().ok_or(StorageError::NoLastInsertId)
+        let id = res.last_insert_id().ok_or(StorageError::NoLastInsertId)?;
+        info!("created new user with id {id}");
+        Ok(id)
+    }
+
+    pub async fn get_user(&self, email: &str) -> StorageResult<User> {
+        Ok(
+            sqlx::query_as(
+                "SELECT (id, email, username, password_hash) FROM users WHERE email = ?",
+            )
+            .bind(email.to_lowercase())
+            .fetch_one(&self.0)
+            .await?,
+        )
     }
 }
 

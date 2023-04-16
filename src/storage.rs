@@ -8,6 +8,7 @@ pub mod error;
 pub mod session;
 pub mod user;
 
+#[derive(Clone)]
 pub struct DbPool(AnyPool);
 
 impl DbPool {
