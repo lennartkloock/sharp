@@ -1,12 +1,12 @@
 use sqlx::{any::AnyPoolOptions, AnyPool};
 
-pub use user::*;
-pub use session::*;
 use crate::storage::error::StorageResult;
+pub use session::*;
+pub use user::*;
 
 pub mod error;
-pub mod user;
 pub mod session;
+pub mod user;
 
 pub struct DbPool(AnyPool);
 

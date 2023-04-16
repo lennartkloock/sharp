@@ -1,4 +1,7 @@
-use crate::config::{SharpConfig, SharpConfigBuilder};
+use crate::{
+    config::{SharpConfig, SharpConfigBuilder},
+    storage::DbPool,
+};
 use axum_extra::extract::CookieJar;
 use clap::Parser;
 use hyper::{
@@ -10,7 +13,6 @@ use std::{convert::Infallible, net::SocketAddr, path::PathBuf};
 use tower::ServiceExt;
 use tracing::{debug, error, info, Level};
 use tracing_subscriber::{filter::LevelFilter, EnvFilter};
-use crate::storage::DbPool;
 
 const VERSION_STRING: &str = concat!(env!("CARGO_PKG_NAME"), " ", env!("CARGO_PKG_VERSION"));
 
@@ -121,7 +123,7 @@ async fn sharp(config: SharpConfig) {
                         let cookies = CookieJar::from_headers(req.headers());
                         let proxy_through = exceptions::is_exception(&req)
                             || cookies.get("SHARP_session").map(|c| c.value() == "true")
-                            == Some(true);
+                                == Some(true);
                         if proxy_through {
                             info!("proxying...");
                             gateway_service::service(req, client_addr, config.upstream)

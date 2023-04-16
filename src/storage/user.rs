@@ -1,30 +1,34 @@
-use sqlx::any::AnyKind;
-use tracing::info;
 use crate::storage::{
     error::{StorageError, StorageResult},
     DbPool,
 };
+use sqlx::any::AnyKind;
+use tracing::info;
 
 type UserId = i64;
 
 pub async fn setup(db: &DbPool) -> sqlx::Result<()> {
     let sql = match db.0.connect_options().kind() {
-        AnyKind::Sqlite => "CREATE TABLE users
+        AnyKind::Sqlite => {
+            "CREATE TABLE users
 (
     id            INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     email         TEXT NOT NULL,
     username      TEXT,
     password_hash TEXT NOT NULL
 );
-",
-        _ => "CREATE TABLE users
+"
+        }
+        _ => {
+            "CREATE TABLE users
 (
     id            INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT,
     email         TEXT NOT NULL,
     username      TEXT,
     password_hash TEXT NOT NULL
 );
-",
+"
+        }
     };
     info!("creating `users` table");
     sqlx::query(sql).execute(&db.0).await.map(|_| ())
