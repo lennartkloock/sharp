@@ -3,7 +3,7 @@ use crate::storage::{
     user::UserId,
     Db,
 };
-use base64::{engine::general_purpose, Engine};
+use base64::Engine;
 use rand::Rng;
 use sqlx::{any::AnyKind, Any, Executor};
 use tracing::info;
@@ -28,7 +28,7 @@ impl NewSession {
         let token: [u8; 16] = rand::thread_rng().gen();
         Self {
             user_id,
-            token: general_purpose::STANDARD.encode(&token),
+            token: base64::engine::general_purpose::STANDARD.encode(&token),
         }
     }
 }
