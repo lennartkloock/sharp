@@ -14,8 +14,8 @@ use axum::{
 mod headers;
 mod templates;
 
-mod register;
 mod login;
+mod register;
 
 pub fn router() -> Router<AppState> {
     Router::new()

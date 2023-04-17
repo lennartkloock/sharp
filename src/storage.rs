@@ -1,39 +1,16 @@
-use std::ops::Deref;
-use sqlx::{Any, any::AnyPoolOptions, AnyPool, Transaction};
-
 use crate::storage::error::StorageResult;
-pub use session::*;
-pub use user::*;
+use sqlx::AnyPool;
 
 pub mod error;
 pub mod session;
 pub mod user;
 
-#[derive(Clone)]
-pub struct Db<E>(E);
+pub type Db = AnyPool;
 
-impl Db<AnyPool> {
-    pub async fn connect(url: &str) -> sqlx::Result<Self> {
-        Ok(Self(AnyPoolOptions::new().connect(url).await?))
-    }
-
-    pub async fn setup(&self) -> StorageResult<()> {
-        self.setup_user().await?;
-        self.setup_session().await?;
-        Ok(())
-    }
-
-    pub async fn begin(&self) -> StorageResult<Db<Transaction<Any>>> {
-        Ok(Db(self.0.begin().await?))
-    }
-}
-
-impl<'a> Deref for Db<Transaction<'a, Any>> {
-    type Target = Transaction<'a, Any>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
+pub async fn setup(db: &Db) -> StorageResult<()> {
+    user::setup(db).await?;
+    session::setup(db).await?;
+    Ok(())
 }
 
 #[cfg(test)]
@@ -85,7 +62,7 @@ mod test {
             pool.insert_user(NewUser {
                 email: "USER".to_string(),
                 username: Some("USERNAME".to_string()),
-                password: "TESTPASS".to_string()
+                password: "TESTPASS".to_string(),
             })
             .await
             .unwrap()

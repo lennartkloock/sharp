@@ -1,32 +1,73 @@
-use crate::storage::Db;
-use sqlx::any::AnyKind;
-use sqlx::AnyPool;
+use crate::storage::{
+    error::{StorageError, StorageResult},
+    user::UserId,
+    Db,
+};
+use base64::{engine::general_purpose, Engine};
+use rand::Rng;
+use sqlx::{any::AnyKind, Any, Executor};
 use tracing::info;
 
-impl Db<AnyPool> {
-    pub async fn setup_session(&self) -> sqlx::Result<()> {
-        let sql = match self.0.connect_options().kind() {
-            AnyKind::Sqlite => {
-                "CREATE TABLE sessions
+pub type SessionId = i64;
+
+#[derive(Clone, Debug, sqlx::FromRow)]
+pub struct Session {
+    pub id: SessionId,
+    pub user_id: UserId,
+    pub token: String,
+}
+
+#[derive(Clone, Debug)]
+pub struct NewSession {
+    pub user_id: UserId,
+    pub token: String,
+}
+
+impl NewSession {
+    pub fn generate(user_id: UserId) -> Self {
+        let token: u64 = rand::thread_rng().gen();
+        Self {
+            user_id,
+            token: general_purpose::STANDARD.encode(token),
+        }
+    }
+}
+
+pub async fn setup(db: &Db) -> sqlx::Result<()> {
+    let sql = match db.connect_options().kind() {
+        AnyKind::Sqlite => {
+            "CREATE TABLE sessions
 (
     id      INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
-    token   INTEGER NOT NULL
+    token   TEXT NOT NULL
 );
 "
-            }
-            _ => {
-                "CREATE TABLE sessions
+        }
+        _ => {
+            "CREATE TABLE sessions
 (
     id      INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT,
     user_id INTEGER NOT NULL,
-    token   INTEGER NOT NULL
+    token   TEXT NOT NULL
 );
 "
-            }
-        };
-        info!("creating `sessions` table");
-        sqlx::query(sql).execute(&self.0).await?;
-        Ok(())
-    }
+        }
+    };
+    info!("creating `sessions` table");
+    sqlx::query(sql).execute(db).await?;
+    Ok(())
+}
+
+pub async fn insert<'a, E: Executor<'a, Database = Any>>(
+    e: E,
+    new_session: NewSession,
+) -> StorageResult<SessionId> {
+    sqlx::query("INSERT INTO sessions (user_id, token) VALUES (?, ?)")
+        .bind(new_session.user_id)
+        .bind(new_session.token)
+        .execute(e)?;
+    let id = res.last_insert_id().ok_or(StorageError::NoLastInsertId)?;
+    info!("created new session with id {id}");
+    Ok(id)
 }

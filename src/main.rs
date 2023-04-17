@@ -10,9 +10,7 @@ use hyper::{
     server::conn::AddrStream,
     service::{make_service_fn, service_fn},
 };
-use std::{convert::Infallible, net::SocketAddr, path::PathBuf};
-use std::sync::Arc;
-use sqlx::AnyPool;
+use std::{convert::Infallible, net::SocketAddr, path::PathBuf, sync::Arc};
 use tower::ServiceExt;
 use tracing::{debug, error, info, Level};
 use tracing_subscriber::{filter::LevelFilter, EnvFilter};
@@ -89,7 +87,7 @@ async fn main() {
                         info!("config is OK");
                     }
                     if args.setup_db {
-                        match db.setup().await {
+                        match storage::setup(&db).await {
                             Ok(_) => info!("successfully set up database"),
                             Err(e) => error!("failed to setup database: {e}"),
                         }
@@ -105,12 +103,12 @@ async fn main() {
 
 #[derive(Clone)]
 pub struct AppState {
-    db: Db<AnyPool>,
+    db: Db,
     config: Arc<SharpConfig>,
     flash_config: axum_flash::Config,
 }
 
-impl FromRef<AppState> for Db<AnyPool> {
+impl FromRef<AppState> for Db {
     fn from_ref(input: &AppState) -> Self {
         input.db.clone()
     }
@@ -134,7 +132,7 @@ impl FromRef<AppState> for axum_flash::Config {
     }
 }
 
-async fn sharp(config: SharpConfig, db: Db<AnyPool>) {
+async fn sharp(config: SharpConfig, db: Db) {
     let in_addr = SocketAddr::new(config.address, config.port);
 
     info!("Listening on http://{}", in_addr);

@@ -38,3 +38,5 @@ askama_axum = "0.3.0"
 
 sqlx = { version = "0.6.3", features = ["runtime-tokio-rustls", "any", "all-databases"] }
 argon2 = "0.5.0"
+rand = "0.8.5"
+base64 = "0.21.0"
