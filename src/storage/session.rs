@@ -25,10 +25,10 @@ pub struct NewSession {
 
 impl NewSession {
     pub fn generate(user_id: UserId) -> Self {
-        let token: u64 = rand::thread_rng().gen();
+        let token: [u8; 16] = rand::thread_rng().gen();
         Self {
             user_id,
-            token: general_purpose::STANDARD.encode(token),
+            token: general_purpose::STANDARD.encode(&token),
         }
     }
 }
@@ -63,10 +63,11 @@ pub async fn insert<'a, E: Executor<'a, Database = Any>>(
     e: E,
     new_session: NewSession,
 ) -> StorageResult<SessionId> {
-    sqlx::query("INSERT INTO sessions (user_id, token) VALUES (?, ?)")
+    let res = sqlx::query("INSERT INTO sessions (user_id, token) VALUES (?, ?)")
         .bind(new_session.user_id)
         .bind(new_session.token)
-        .execute(e)?;
+        .execute(e)
+        .await?;
     let id = res.last_insert_id().ok_or(StorageError::NoLastInsertId)?;
     info!("created new session with id {id}");
     Ok(id)

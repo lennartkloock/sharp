@@ -5,14 +5,7 @@ use crate::{
     },
     config::{CustomCss, SharpConfig},
     i18n::I18n,
-    storage::{
-        error::StorageResult,
-        session,
-        session::{NewSession, Session},
-        user,
-        user::NewUser,
-        Db, NewUser,
-    },
+    storage::{error::StorageResult, session, session::NewSession, user, user::NewUser, Db},
 };
 use axum::{
     extract::State,
@@ -89,6 +82,6 @@ async fn register_new_user(db: &Db, new_user: NewUser) -> StorageResult<()> {
     let mut transaction = db.begin().await?;
     let id = user::insert(&mut transaction, new_user).await?;
     session::insert(&mut transaction, NewSession::generate(id)).await?;
-    transaction.commit()?;
+    transaction.commit().await?;
     Ok(())
 }
