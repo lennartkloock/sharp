@@ -1,6 +1,6 @@
 use crate::storage::{
     error::{StorageError, StorageResult},
-    DbPool,
+    Db,
 };
 use argon2::{
     password_hash,
@@ -8,36 +8,10 @@ use argon2::{
     Argon2, PasswordHasher,
 };
 use sqlx::any::AnyKind;
+use sqlx::{Any, AnyPool, Executor};
 use tracing::info;
 
 type UserId = i64;
-
-pub async fn setup(db: &DbPool) -> sqlx::Result<()> {
-    let sql = match db.0.connect_options().kind() {
-        AnyKind::Sqlite => {
-            "CREATE TABLE users
-(
-    id            INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-    email         TEXT NOT NULL,
-    username      TEXT,
-    password_hash TEXT NOT NULL
-);
-"
-        }
-        _ => {
-            "CREATE TABLE users
-(
-    id            INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT,
-    email         TEXT NOT NULL,
-    username      TEXT,
-    password_hash TEXT NOT NULL
-);
-"
-        }
-    };
-    info!("creating `users` table");
-    sqlx::query(sql).execute(&db.0).await.map(|_| ())
-}
 
 #[derive(Clone, Debug, sqlx::FromRow)]
 pub struct User {
@@ -54,8 +28,38 @@ pub struct NewUser {
     pub password: String,
 }
 
-impl DbPool {
-    pub async fn insert_user(&self, new_user: NewUser) -> StorageResult<UserId> {
+impl Db<AnyPool> {
+    pub async fn setup_user(&self) -> StorageResult<()> {
+        let sql = match self.0.connect_options().kind() {
+            AnyKind::Sqlite => {
+                "CREATE TABLE users
+(
+    id            INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    email         TEXT NOT NULL,
+    username      TEXT,
+    password_hash TEXT NOT NULL
+);
+"
+            }
+            _ => {
+                "CREATE TABLE users
+(
+    id            INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    email         TEXT NOT NULL,
+    username      TEXT,
+    password_hash TEXT NOT NULL
+);
+"
+            }
+        };
+        info!("creating `users` table");
+        sqlx::query(sql).execute(&self.0).await?;
+        Ok(())
+    }
+}
+
+impl<'q, E> Db<E> where E: Executor<'q, Database = Any> {
+    pub async fn insert_user(&'q self, new_user: NewUser) -> StorageResult<UserId> {
         let pass_hash = hash_password(&new_user.password).map_err(StorageError::PasswordHashing)?;
         let res =
             sqlx::query("INSERT INTO users (email, username, password_hash) VALUES (?, ?, ?)")
@@ -69,7 +73,7 @@ impl DbPool {
         Ok(id)
     }
 
-    pub async fn get_user(&self, email: &str) -> StorageResult<User> {
+    pub async fn get_user(&'q self, email: &str) -> StorageResult<User> {
         Ok(
             sqlx::query_as(
                 "SELECT (id, email, username, password_hash) FROM users WHERE email = ?",

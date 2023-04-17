@@ -1,6 +1,6 @@
 use crate::{
     config::{CustomCss, SharpConfig, SharpConfigBuilder},
-    storage::DbPool,
+    storage::Db,
 };
 use axum::extract::FromRef;
 use axum_extra::extract::CookieJar;
@@ -12,6 +12,7 @@ use hyper::{
 };
 use std::{convert::Infallible, net::SocketAddr, path::PathBuf};
 use std::sync::Arc;
+use sqlx::AnyPool;
 use tower::ServiceExt;
 use tracing::{debug, error, info, Level};
 use tracing_subscriber::{filter::LevelFilter, EnvFilter};
@@ -82,7 +83,7 @@ async fn main() {
     match config_res {
         Ok(config) => {
             debug!("read config: {config:?}");
-            match DbPool::connect(&config.database_url).await {
+            match Db::connect(&config.database_url).await {
                 Ok(db) if args.check || args.setup_db => {
                     if args.check {
                         info!("config is OK");
@@ -104,12 +105,12 @@ async fn main() {
 
 #[derive(Clone)]
 pub struct AppState {
-    db: DbPool,
+    db: Db<AnyPool>,
     config: Arc<SharpConfig>,
     flash_config: axum_flash::Config,
 }
 
-impl FromRef<AppState> for DbPool {
+impl FromRef<AppState> for Db<AnyPool> {
     fn from_ref(input: &AppState) -> Self {
         input.db.clone()
     }
@@ -133,7 +134,7 @@ impl FromRef<AppState> for axum_flash::Config {
     }
 }
 
-async fn sharp(config: SharpConfig, db: DbPool) {
+async fn sharp(config: SharpConfig, db: Db<AnyPool>) {
     let in_addr = SocketAddr::new(config.address, config.port);
 
     info!("Listening on http://{}", in_addr);

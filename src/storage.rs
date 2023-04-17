@@ -1,4 +1,5 @@
-use sqlx::{any::AnyPoolOptions, AnyPool};
+use std::ops::Deref;
+use sqlx::{Any, any::AnyPoolOptions, AnyPool, Transaction};
 
 use crate::storage::error::StorageResult;
 pub use session::*;
@@ -9,28 +10,40 @@ pub mod session;
 pub mod user;
 
 #[derive(Clone)]
-pub struct DbPool(AnyPool);
+pub struct Db<E>(E);
 
-impl DbPool {
+impl Db<AnyPool> {
     pub async fn connect(url: &str) -> sqlx::Result<Self> {
         Ok(Self(AnyPoolOptions::new().connect(url).await?))
     }
 
     pub async fn setup(&self) -> StorageResult<()> {
-        user::setup(self).await?;
-        session::setup(self).await?;
+        self.setup_user().await?;
+        self.setup_session().await?;
         Ok(())
+    }
+
+    pub async fn begin(&self) -> StorageResult<Db<Transaction<Any>>> {
+        Ok(Db(self.0.begin().await?))
+    }
+}
+
+impl<'a> Deref for Db<Transaction<'a, Any>> {
+    type Target = Transaction<'a, Any>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::storage::{DbPool, NewUser};
+    use crate::storage::{Db, NewUser};
     use std::env;
 
     #[tokio::test]
     async fn fetch_test() {
-        let pool = DbPool::connect("sqlite::memory:").await.unwrap();
+        let pool = Db::connect("sqlite::memory:").await.unwrap();
         let row: (i64,) = sqlx::query_as("SELECT $1")
             .bind(150_i64)
             .fetch_one(&pool.0)
@@ -41,7 +54,7 @@ mod test {
 
     #[tokio::test]
     async fn store_test() {
-        let pool = DbPool::connect("sqlite::memory:").await.unwrap();
+        let pool = Db::connect("sqlite::memory:").await.unwrap();
         sqlx::query("CREATE TABLE people (name varchar(255))")
             .execute(&pool.0)
             .await
@@ -66,7 +79,7 @@ mod test {
         } else {
             "sqlite:sharp-test.sqlite"
         };
-        let pool = DbPool::connect(url).await.unwrap();
+        let pool = Db::connect(url).await.unwrap();
         println!(
             "User id: {}",
             pool.insert_user(NewUser {
