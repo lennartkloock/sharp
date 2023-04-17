@@ -1,10 +1,12 @@
-use axum::extract::State;
-use axum::response::IntoResponse;
-use axum::TypedHeader;
-use crate::app::headers::{AcceptLanguage, ContentLanguage};
-use crate::app::templates;
-use crate::config::CustomCss;
-use crate::i18n::I18n;
+use crate::{
+    app::{
+        headers::{AcceptLanguage, ContentLanguage},
+        templates,
+    },
+    config::CustomCss,
+    i18n::I18n,
+};
+use axum::{extract::State, response::IntoResponse, TypedHeader};
 
 pub async fn login(
     State(custom_css): State<Option<CustomCss>>,
