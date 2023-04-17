@@ -35,7 +35,8 @@ pub async fn setup(db: &Db) -> StorageResult<()> {
     id            INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     email         TEXT NOT NULL,
     username      TEXT,
-    password_hash TEXT NOT NULL
+    password_hash TEXT NOT NULL,
+    created_at    DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 "
         }
@@ -45,7 +46,8 @@ pub async fn setup(db: &Db) -> StorageResult<()> {
     id            INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT,
     email         TEXT NOT NULL,
     username      TEXT,
-    password_hash TEXT NOT NULL
+    password_hash TEXT NOT NULL,
+    created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 "
         }

@@ -5,7 +5,11 @@ use crate::storage::{
 };
 use base64::Engine;
 use rand::Rng;
-use sqlx::{any::AnyKind, Any, Executor};
+use sqlx::{
+    any::AnyKind,
+    types::{chrono, chrono::Utc},
+    Any, Executor,
+};
 use tracing::info;
 
 pub type SessionId = i64;
@@ -15,6 +19,7 @@ pub struct Session {
     pub id: SessionId,
     pub user_id: UserId,
     pub token: String,
+    pub created_at: chrono::DateTime<Utc>,
 }
 
 #[derive(Clone, Debug)]
@@ -38,18 +43,20 @@ pub async fn setup(db: &Db) -> sqlx::Result<()> {
         AnyKind::Sqlite => {
             "CREATE TABLE sessions
 (
-    id      INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    token   TEXT NOT NULL
+    id         INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    user_id    INTEGER NOT NULL,
+    token      TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 "
         }
         _ => {
             "CREATE TABLE sessions
 (
-    id      INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT,
-    user_id INTEGER NOT NULL,
-    token   TEXT NOT NULL
+    id         INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    user_id    INTEGER NOT NULL,
+    token      TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 "
         }
