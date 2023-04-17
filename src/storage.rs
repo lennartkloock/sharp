@@ -15,7 +15,7 @@ pub async fn setup(db: &Db) -> StorageResult<()> {
 
 #[cfg(test)]
 mod test {
-    use crate::storage::{Db, NewUser};
+    use crate::storage::{user, user::NewUser, Db};
     use std::env;
 
     #[tokio::test]
@@ -23,7 +23,7 @@ mod test {
         let pool = Db::connect("sqlite::memory:").await.unwrap();
         let row: (i64,) = sqlx::query_as("SELECT $1")
             .bind(150_i64)
-            .fetch_one(&pool.0)
+            .fetch_one(&pool)
             .await
             .unwrap();
         assert_eq!(row.0, 150);
@@ -33,16 +33,16 @@ mod test {
     async fn store_test() {
         let pool = Db::connect("sqlite::memory:").await.unwrap();
         sqlx::query("CREATE TABLE people (name varchar(255))")
-            .execute(&pool.0)
+            .execute(&pool)
             .await
             .unwrap();
         sqlx::query("INSERT INTO people (name) VALUES ($1)")
             .bind("Test")
-            .execute(&pool.0)
+            .execute(&pool)
             .await
             .unwrap();
         let row: (String,) = sqlx::query_as("SELECT name FROM people")
-            .fetch_one(&pool.0)
+            .fetch_one(&pool)
             .await
             .unwrap();
         assert_eq!(row.0, "Test");
@@ -59,11 +59,14 @@ mod test {
         let pool = Db::connect(url).await.unwrap();
         println!(
             "User id: {}",
-            pool.insert_user(NewUser {
-                email: "USER".to_string(),
-                username: Some("USERNAME".to_string()),
-                password: "TESTPASS".to_string(),
-            })
+            user::insert(
+                &pool,
+                NewUser {
+                    email: "USER".to_string(),
+                    username: Some("USERNAME".to_string()),
+                    password: "TESTPASS".to_string(),
+                }
+            )
             .await
             .unwrap()
         );
