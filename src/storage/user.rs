@@ -18,6 +18,7 @@ pub struct User {
     pub email: String,
     pub username: Option<String>,
     pub password_hash: String,
+    pub created_at: time::OffsetDateTime,
 }
 
 #[derive(Clone, Debug, serde::Deserialize)]
@@ -59,12 +60,12 @@ pub async fn setup(db: &Db) -> StorageResult<()> {
 
 pub async fn insert<'a, E: Executor<'a, Database = Any>>(
     e: E,
-    new_user: NewUser,
+    new_user: &NewUser,
 ) -> StorageResult<UserId> {
     let pass_hash = hash_password(&new_user.password).map_err(StorageError::PasswordHashing)?;
     let res = sqlx::query("INSERT INTO users (email, username, password_hash) VALUES (?, ?, ?)")
-        .bind(new_user.email.to_lowercase())
-        .bind(new_user.username)
+        .bind(&new_user.email.to_lowercase())
+        .bind(&new_user.username)
         .bind(pass_hash)
         .execute(e)
         .await?;

@@ -5,21 +5,20 @@ use crate::storage::{
 };
 use base64::Engine;
 use rand::Rng;
-use sqlx::{
-    any::AnyKind,
-    types::{chrono, chrono::Utc},
-    Any, Executor,
-};
+use sqlx::{any::AnyKind, Any, Executor};
+use time::Duration;
 use tracing::info;
 
 pub type SessionId = i64;
+
+pub const MAX_AGE: Duration = Duration::days(1);
 
 #[derive(Clone, Debug, sqlx::FromRow)]
 pub struct Session {
     pub id: SessionId,
     pub user_id: UserId,
     pub token: String,
-    pub created_at: chrono::DateTime<Utc>,
+    pub created_at: time::OffsetDateTime,
 }
 
 #[derive(Clone, Debug)]
@@ -68,11 +67,11 @@ pub async fn setup(db: &Db) -> sqlx::Result<()> {
 
 pub async fn insert<'a, E: Executor<'a, Database = Any>>(
     e: E,
-    new_session: NewSession,
+    new_session: &NewSession,
 ) -> StorageResult<SessionId> {
     let res = sqlx::query("INSERT INTO sessions (user_id, token) VALUES (?, ?)")
-        .bind(new_session.user_id)
-        .bind(new_session.token)
+        .bind(&new_session.user_id)
+        .bind(&new_session.token)
         .execute(e)
         .await?;
     let id = res.last_insert_id().ok_or(StorageError::NoLastInsertId)?;

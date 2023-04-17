@@ -1,7 +1,7 @@
 use crate::{
     app::{
         headers::{AcceptLanguage, ContentLanguage},
-        templates,
+        templates, AUTH_COOKIE,
     },
     config::{CustomCss, SharpConfig},
     i18n::I18n,
@@ -11,6 +11,10 @@ use axum::{
     extract::State,
     response::{IntoResponse, Redirect},
     Form, TypedHeader,
+};
+use axum_extra::extract::{
+    cookie::{Cookie, SameSite},
+    CookieJar,
 };
 use axum_flash::{Flash, IncomingFlashes};
 use std::sync::Arc;
@@ -64,24 +68,42 @@ pub async fn submit_register(
     State(db): State<Db>,
     State(config): State<Arc<SharpConfig>>,
     TypedHeader(accept_lang): TypedHeader<AcceptLanguage>,
+    cookies: CookieJar,
     flash: Flash,
     Form(new_user): Form<RegisterData>,
-) -> (Flash, Redirect) {
+) -> (Flash, CookieJar, Redirect) {
     let i18n: I18n = accept_lang.into();
     let Ok(new_user) = new_user.try_into() else {
-        return (flash.error(i18n.register.errors.password_mismatch), Redirect::to("/register"));
+        return (flash.error(i18n.register.errors.password_mismatch), cookies, Redirect::to("/register"));
     };
     match register_new_user(&db, new_user).await {
-        Ok(_) => (flash, Redirect::to(&config.redirect_url)),
-        Err(e) => (flash.error(format!("{e}")), Redirect::to("/register")),
+        Ok(token) => (
+            flash,
+            cookies.add(
+                Cookie::build(AUTH_COOKIE, token)
+                    .max_age(session::MAX_AGE)
+                    .http_only(true)
+                    .path("/")
+                    .same_site(SameSite::Strict)
+                    .secure(true)
+                    .finish(),
+            ),
+            Redirect::to(&config.redirect_url),
+        ),
+        Err(e) => (
+            flash.error(format!("{e}")),
+            cookies,
+            Redirect::to("/register"),
+        ),
     }
 }
 
-async fn register_new_user(db: &Db, new_user: NewUser) -> StorageResult<()> {
+async fn register_new_user(db: &Db, new_user: NewUser) -> StorageResult<String> {
     // Transaction is dropped when error occurs, causing a rollback
     let mut transaction = db.begin().await?;
-    let id = user::insert(&mut transaction, new_user).await?;
-    session::insert(&mut transaction, NewSession::generate(id)).await?;
+    let id = user::insert(&mut transaction, &new_user).await?;
+    let session = NewSession::generate(id);
+    session::insert(&mut transaction, &session).await?;
     transaction.commit().await?;
-    Ok(())
+    Ok(session.token)
 }

@@ -61,7 +61,7 @@ mod test {
             "User id: {}",
             user::insert(
                 &pool,
-                NewUser {
+                &NewUser {
                     email: "USER".to_string(),
                     username: Some("USERNAME".to_string()),
                     password: "TESTPASS".to_string(),

@@ -17,6 +17,8 @@ mod templates;
 mod login;
 mod register;
 
+pub const AUTH_COOKIE: &str = "SHARP_token";
+
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/", get(|| async { Redirect::to("/login") }))
