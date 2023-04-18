@@ -1,13 +1,14 @@
-use crate::storage::{
-    error::{StorageError, StorageResult},
-    user::UserId,
-    Db,
-};
 use base64::Engine;
 use rand::Rng;
 use sqlx::{any::AnyKind, Any, Executor};
 use time::Duration;
 use tracing::info;
+
+use crate::storage::{
+    error::{StorageError, StorageResult},
+    user::UserId,
+    Db,
+};
 
 pub type SessionId = i64;
 
@@ -18,7 +19,7 @@ pub struct Session {
     pub id: SessionId,
     pub user_id: UserId,
     pub token: String,
-    pub created_at: time::OffsetDateTime,
+    // pub created_at: time::OffsetDateTime,
 }
 
 #[derive(Clone, Debug)]
@@ -77,4 +78,16 @@ pub async fn insert<'a, E: Executor<'a, Database = Any>>(
     let id = res.last_insert_id().ok_or(StorageError::NoLastInsertId)?;
     info!("created new session with id {id}");
     Ok(id)
+}
+
+pub async fn get_by_token<'a, E: Executor<'a, Database = Any>>(
+    e: E,
+    token: &str,
+) -> StorageResult<Session> {
+    Ok(
+        sqlx::query_as("SELECT id, user_id, token, created_at FROM sessions WHERE token = ?")
+            .bind(token)
+            .fetch_one(e)
+            .await?,
+    )
 }
