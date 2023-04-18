@@ -1,8 +1,10 @@
 use crate::{
-    app::headers::{AcceptLanguage, ContentLanguage},
     config::CustomCss,
     i18n::I18n,
-    AppState,
+    sharp::{
+        app::headers::{AcceptLanguage, ContentLanguage},
+        AppState,
+    },
 };
 use axum::{
     extract::State,

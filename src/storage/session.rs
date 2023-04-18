@@ -32,7 +32,7 @@ impl NewSession {
         let token: [u8; 16] = rand::thread_rng().gen();
         Self {
             user_id,
-            token: base64::engine::general_purpose::STANDARD.encode(&token),
+            token: base64::engine::general_purpose::STANDARD.encode(token),
         }
     }
 }
@@ -70,7 +70,7 @@ pub async fn insert<'a, E: Executor<'a, Database = Any>>(
     new_session: &NewSession,
 ) -> StorageResult<SessionId> {
     let res = sqlx::query("INSERT INTO sessions (user_id, token) VALUES (?, ?)")
-        .bind(&new_session.user_id)
+        .bind(new_session.user_id)
         .bind(&new_session.token)
         .execute(e)
         .await?;

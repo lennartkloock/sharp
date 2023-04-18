@@ -1,10 +1,10 @@
 use crate::{
-    app::{
+    config::CustomCss,
+    i18n::I18n,
+    sharp::app::{
         headers::{AcceptLanguage, ContentLanguage},
         templates,
     },
-    config::CustomCss,
-    i18n::I18n,
 };
 use axum::{extract::State, response::IntoResponse, TypedHeader};
 

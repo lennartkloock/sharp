@@ -1,10 +1,10 @@
 use crate::{
-    app::{
+    config::{CustomCss, SharpConfig},
+    i18n::I18n,
+    sharp::app::{
         headers::{AcceptLanguage, ContentLanguage},
         templates, AUTH_COOKIE,
     },
-    config::{CustomCss, SharpConfig},
-    i18n::I18n,
     storage::{error::StorageResult, session, session::NewSession, user, user::NewUser, Db},
 };
 use axum::{
