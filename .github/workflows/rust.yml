@@ -30,4 +30,4 @@ jobs:
             - name: Clippy
               run: cargo clippy -- -Dwarnings
             - name: Rustfmt
-              run: cargo +nightly fmt --check
+              run: cargo fmt --check
