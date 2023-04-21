@@ -34,3 +34,6 @@ i18n_langid_codegen = "0.1.1"
 
 askama = { version = "0.12.0", features = ["with-axum"] }
 askama_axum = "0.3.0"
+
+[profile.release]
+strip = "symbols"
