@@ -1,22 +1,24 @@
-use argon2::{Argon2, PasswordHash, PasswordVerifier};
-use argon2::password_hash::Error;
 use crate::{
     config::CustomCss,
     i18n::I18n,
     sharp::app::{
-        headers::{AcceptLanguage, ContentLanguage},
+        headers::{build_auth_cookie, AcceptLanguage, ContentLanguage},
         templates,
     },
+    storage::{error::StorageError, session, session::NewSession, user, user::User, Db},
 };
-use axum::{extract::State, Form, response::IntoResponse, TypedHeader};
-use axum::response::Redirect;
+use argon2::{
+    password_hash::{rand_core::OsRng, SaltString},
+    Argon2, Params, PasswordHash, PasswordHasher,
+};
+use axum::{
+    extract::State,
+    response::{IntoResponse, Redirect},
+    Form, TypedHeader,
+};
 use axum_extra::extract::CookieJar;
 use axum_flash::{Flash, IncomingFlashes};
 use tracing::{info, warn};
-use crate::app::headers::build_auth_cookie;
-use crate::storage::session::NewSession;
-use crate::storage::{Db, session, user};
-use crate::storage::user::User;
 
 pub async fn login(
     State(custom_css): State<Option<CustomCss>>,
@@ -31,7 +33,11 @@ pub async fn login(
     (
         incoming_flashes,
         ContentLanguage::from(i18n.lang_id.clone()),
-        templates::Login { i18n, custom_css, flashes },
+        templates::Login {
+            i18n,
+            custom_css,
+            flashes,
+        },
     )
 }
 
@@ -49,55 +55,96 @@ pub async fn submit_login(
     Form(login): Form<LoginData>,
 ) -> impl IntoResponse {
     let i18n: I18n = accept_lang.into();
-    match user::get(&db, &login.email).await
-        .map(|u| u.map(|User { id, password_hash, .. }| PasswordHash::new(&password_hash)
-            .map(|hash| Argon2::default().verify_password(login.password.as_bytes(), &hash)
-                .map(|_| id)))
-        )
-    {
-        Ok(Some(Ok(Ok(user_id)))) => {
-            info!("successfully validated login credentials");
-            let new_session = NewSession::generate(user_id);
-            match session::insert(&db, &new_session).await {
-                Ok(_) => (
-                    flash,
-                    cookies.add(build_auth_cookie(new_session.token)),
-                    Redirect::to("/"),
-                ),
-                Err(e) => (
-                    flash.error(format!("{}: {e}", i18n.internal_error)),
-                    cookies,
-                    Redirect::to("/login"),
-                ),
-            }
-        }
-        Ok(Some(Ok(Err(Error::Password)))) | Ok(None) => {
+    match login_user(&db, &login).await {
+        Ok(token) => (
+            flash,
+            cookies.add(build_auth_cookie(token)),
+            Redirect::to("/"),
+        ),
+        Err(LoginError::Argon2(e)) => {
+            warn!("password hashing error during login attempt: {e}");
             (
-                flash.error(i18n.login.wrong_creds_error),
+                flash.error(format!(
+                    "{}: failed to validate password",
+                    i18n.internal_error
+                )),
                 cookies,
                 Redirect::to("/login"),
             )
         }
-        Ok(Some(Ok(Err(e)))) => {
-            warn!("failed to verify password: {e}");
-            (
-                flash.error(format!("{}: failed to validate password", i18n.internal_error)),
-                cookies,
-                Redirect::to("/login"),
-            )
-        }
-        Ok(Some(Err(e))) => {
-            warn!("failed to parse stored password hash: {e}");
-            (
-                flash.error(format!("{}: failed to validate password", i18n.internal_error)),
-                cookies,
-                Redirect::to("/login"),
-            )
-        },
-        Err(e) => (
+        Err(LoginError::Storage(e)) => (
             flash.error(format!("{}: {e}", i18n.internal_error)),
             cookies,
             Redirect::to("/login"),
         ),
+        Err(LoginError::WrongEmailPassword) => (
+            flash.error(i18n.login.wrong_creds_error),
+            cookies,
+            Redirect::to("/login"),
+        ),
     }
+}
+
+enum LoginError {
+    Argon2(argon2::password_hash::Error),
+    Storage(StorageError),
+    WrongEmailPassword,
+}
+
+impl From<argon2::password_hash::Error> for LoginError {
+    fn from(value: argon2::password_hash::Error) -> Self {
+        Self::Argon2(value)
+    }
+}
+
+impl From<StorageError> for LoginError {
+    fn from(value: StorageError) -> Self {
+        Self::Storage(value)
+    }
+}
+
+async fn login_user(db: &Db, data: &LoginData) -> Result<String, LoginError> {
+    let user = get_user_and_verify(db, data).await?;
+    info!("successfully validated login credentials");
+    let new_session = NewSession::generate(user.id);
+    session::insert(db, &new_session).await?;
+    Ok(new_session.token)
+}
+
+/// Do not use argon's verify_password
+///
+/// The difference is that this method hashes the given password, even when there was no user found.
+/// This is important since a client could find out if a user exists in the database just by analyzing the server response time.
+async fn get_user_and_verify(db: &Db, data: &LoginData) -> Result<User, LoginError> {
+    let user = user::get(db, &data.email).await?;
+    let password_hash = user.as_ref().map(|u| u.password_hash.clone());
+    let (stored_hash, params) = if let Some(hash) = &password_hash {
+        let hash = PasswordHash::new(hash)?;
+        let params = Params::try_from(&hash)?;
+        (Some(hash), params)
+    } else {
+        (None, Params::default())
+    };
+    let random_salt = SaltString::generate(&mut OsRng);
+    let salt = stored_hash
+        .as_ref()
+        .and_then(|h| h.salt)
+        .unwrap_or(random_salt.as_salt());
+    let hash = Argon2::default()
+        .hash_password_customized(
+            data.password.as_bytes(),
+            stored_hash.as_ref().map(|h| h.algorithm),
+            stored_hash.as_ref().and_then(|h| h.version),
+            params,
+            salt,
+        )?
+        .hash
+        .ok_or(LoginError::WrongEmailPassword)?;
+    let user = user.ok_or(LoginError::WrongEmailPassword)?;
+    let stored_hash = stored_hash
+        .and_then(|h| h.hash)
+        .ok_or(LoginError::WrongEmailPassword)?;
+    (stored_hash == hash)
+        .then_some(user)
+        .ok_or(LoginError::WrongEmailPassword)
 }

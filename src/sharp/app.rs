@@ -13,6 +13,8 @@ use axum::{
     Router, TypedHeader,
 };
 
+pub const AUTH_COOKIE: &str = "SHARP_token";
+
 mod headers;
 mod templates;
 
