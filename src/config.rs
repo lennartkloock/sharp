@@ -51,6 +51,7 @@ pub struct SharpConfig {
     pub address: IpAddr,
     pub port: u16,
     pub upstream: SocketAddr,
+    #[builder(default = "String::from(\"sqlite:sharp.sqlite\")")]
     pub database_url: String,
     #[builder(default = "10")]
     pub database_max_connections: u32,
