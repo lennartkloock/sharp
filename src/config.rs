@@ -52,6 +52,8 @@ pub struct SharpConfig {
     pub port: u16,
     pub upstream: SocketAddr,
     pub database_url: String,
+    #[builder(default = "10")]
+    pub database_max_connections: u32,
     #[builder(
         default = "vec![\"/favicon.ico\".to_string(), \"/robots.txt\".to_string(), \"/sitemap.xml\".to_string()]"
     )]
@@ -99,6 +101,7 @@ impl SharpConfigBuilder {
             port,
             upstream,
             database_url: env::var("SHARP_DATABASE_URL").ok(),
+            database_max_connections: None,
             exceptions: None,
             custom_css: None,
             redirect_url: None,

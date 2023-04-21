@@ -1,6 +1,7 @@
-use crate::{config::SharpConfigBuilder, storage::Db};
+use crate::config::SharpConfigBuilder;
 use clap::Parser;
-use std::path::PathBuf;
+use sqlx::{any::AnyPoolOptions, sqlite::SqliteConnectOptions, ConnectOptions, Connection};
+use std::{path::PathBuf, str::FromStr};
 use tracing::{debug, error, info, Level};
 use tracing_subscriber::{filter::LevelFilter, EnvFilter};
 
@@ -60,7 +61,19 @@ async fn main() {
     match config_res {
         Ok(config) => {
             debug!("read config: {config:?}");
-            match Db::connect(&config.database_url).await {
+
+            if let Ok(opt) = SqliteConnectOptions::from_str(&config.database_url) {
+                if let Ok(con) = opt.create_if_missing(true).connect().await {
+                    debug!("established first connection to sqlite database");
+                    con.close();
+                }
+            }
+
+            match AnyPoolOptions::new()
+                .max_connections(config.database_max_connections)
+                .connect(&config.database_url)
+                .await
+            {
                 Ok(db) if args.check || args.setup_db => {
                     if args.check {
                         info!("config is OK");
