@@ -16,6 +16,7 @@ register:
     login_link: Login
     button: Register
     password_mismatch_error: The passwords do not match
+    password_too_short_error: The password must be at least 8 characters
 
 reset:
     heading: Reset Password

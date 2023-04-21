@@ -15,6 +15,7 @@ register:
     login_link: Anmelden
     button: Registrieren
     password_mismatch_error: Die Passwörter stimmen nicht überein
+    password_too_short_error: Das Passwort muss mindestens 8 Zeichen lang sein
 
 reset:
     heading: Passwort Zurücksetzen
