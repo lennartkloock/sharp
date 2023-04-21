@@ -6,6 +6,7 @@ login:
     registered_question: Noch nicht registriert?
     button: Anmelden
     register_link: Registrieren
+    wrong_creds_error: Falsche/s Email/Passwort
 
 register:
     heading: Registrieren
@@ -13,10 +14,11 @@ register:
     login_question: Schon registriert?
     login_link: Anmelden
     button: Registrieren
-    errors:
-        password_mismatch: Die Passwörter stimmen nicht überein
+    password_mismatch_error: Die Passwörter stimmen nicht überein
 
 reset:
     heading: Passwort Zurücksetzen
     button: Bestätigungsmail schicken
     login_link: Zurück zur Anmeldung
+
+internal_error: Interner Fehler

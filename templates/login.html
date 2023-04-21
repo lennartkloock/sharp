@@ -6,6 +6,9 @@
 <style>{% include "form-styles.css" %}</style>
 <form method="post" action="/login" class="pane">
     <h1 class="heading black">{{ i18n.login.heading }}</h1>
+    {% for flash in flashes %}
+        <div class="flash {% match flash.0 %}{% when Error %}error{% when Success %}success{% endmatch %}">{{ flash.1 }}</div>
+    {% endfor %}
     <label for="email-field" class="sr-only">{{ i18n.email }}</label>
     <input type="email" name="email" placeholder="{{ i18n.email }}" id="email-field" class="field" required>
     <label for="password-field" class="sr-only">{{ i18n.password }}</label>

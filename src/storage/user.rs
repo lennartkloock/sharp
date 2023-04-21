@@ -18,7 +18,7 @@ pub struct User {
     pub email: String,
     pub username: Option<String>,
     pub password_hash: String,
-    pub created_at: time::OffsetDateTime,
+    // pub created_at: time::OffsetDateTime,
 }
 
 #[derive(Clone, Debug, serde::Deserialize)]
@@ -74,11 +74,11 @@ pub async fn insert<'a, E: Executor<'a, Database = Any>>(
     Ok(id)
 }
 
-pub async fn get<'a, E: Executor<'a, Database = Sqlite>>(e: E, email: &str) -> StorageResult<User> {
+pub async fn get<'a, E: Executor<'a, Database = Any>>(e: E, email: &str) -> StorageResult<Option<User>> {
     Ok(
-        sqlx::query_as("SELECT (id, email, username, password_hash) FROM users WHERE email = ?")
+        sqlx::query_as("SELECT id, email, username, password_hash FROM users WHERE email = ?")
             .bind(email.to_lowercase())
-            .fetch_one(e)
+            .fetch_optional(e)
             .await?,
     )
 }

@@ -1,7 +1,7 @@
 use crate::{
     app::{
         headers::{AcceptLanguage, ContentLanguage},
-        templates, AUTH_COOKIE,
+        templates
     },
     config::{CustomCss, SharpConfig},
     i18n::I18n,
@@ -13,11 +13,11 @@ use axum::{
     Form, TypedHeader,
 };
 use axum_extra::extract::{
-    cookie::{Cookie, SameSite},
     CookieJar,
 };
 use axum_flash::{Flash, IncomingFlashes};
 use std::sync::Arc;
+use crate::app::headers::build_auth_cookie;
 
 pub async fn register(
     State(custom_css): State<Option<CustomCss>>,
@@ -74,20 +74,12 @@ pub async fn submit_register(
 ) -> (Flash, CookieJar, Redirect) {
     let i18n: I18n = accept_lang.into();
     let Ok(new_user) = new_user.try_into() else {
-        return (flash.error(i18n.register.errors.password_mismatch), cookies, Redirect::to("/register"));
+        return (flash.error(i18n.register.password_mismatch_error), cookies, Redirect::to("/register"));
     };
     match register_new_user(&db, new_user).await {
         Ok(token) => (
             flash,
-            cookies.add(
-                Cookie::build(AUTH_COOKIE, token)
-                    .max_age(session::MAX_AGE)
-                    .http_only(true)
-                    .path("/")
-                    .same_site(SameSite::Strict)
-                    .secure(true)
-                    .finish(),
-            ),
+            cookies.add(build_auth_cookie(token)),
             Redirect::to(&config.redirect_url),
         ),
         Err(e) => (

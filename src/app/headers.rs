@@ -5,8 +5,23 @@ use axum::{
     response::{IntoResponseParts, ResponseParts},
 };
 use std::{ops::Deref, str::FromStr};
+use std::borrow::Cow;
+use axum_extra::extract::cookie::{Cookie, SameSite};
 use tracing::debug;
 use unic_langid::LanguageIdentifier;
+use crate::storage::session;
+
+pub const AUTH_COOKIE: &str = "SHARP_token";
+
+pub fn build_auth_cookie<'c, S: Into<Cow<'c, str>>>(value: S) -> Cookie<'c> {
+    Cookie::build(AUTH_COOKIE, value.into())
+        .max_age(session::MAX_AGE)
+        .http_only(true)
+        .path("/")
+        .same_site(SameSite::Strict)
+        .secure(true)
+        .finish()
+}
 
 pub struct AcceptLanguage(Vec<LanguageIdentifier>);
 
