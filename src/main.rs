@@ -1,25 +1,20 @@
-use crate::config::{SharpConfig, SharpConfigBuilder};
-use axum_extra::extract::CookieJar;
+use crate::config::SharpConfigBuilder;
 use clap::Parser;
-use hyper::{
-    body::HttpBody,
-    server::conn::AddrStream,
-    service::{make_service_fn, service_fn},
-};
-use std::{convert::Infallible, net::SocketAddr, path::PathBuf};
-use tower::ServiceExt;
+use sqlx::{any::AnyPoolOptions, sqlite::SqliteConnectOptions, ConnectOptions, Connection};
+use std::{path::PathBuf, str::FromStr};
 use tracing::{debug, error, info, Level};
 use tracing_subscriber::{filter::LevelFilter, EnvFilter};
 
 const VERSION_STRING: &str = concat!(env!("CARGO_PKG_NAME"), " ", env!("CARGO_PKG_VERSION"));
 
-mod app;
 mod config;
-mod exceptions;
+
 mod i18n {
     i18n_langid_codegen::i18n!("locales");
 }
-mod gateway_service;
+
+mod sharp;
+mod storage;
 
 // TODO: Improve slogan, include in README
 
@@ -38,14 +33,9 @@ struct Args {
     /// Check config file for errors
     #[arg(long)]
     check: bool,
-}
-
-#[derive(Debug, thiserror::Error)]
-enum RoutingError {
-    #[error("hyper error: {0}")]
-    Hyper(#[from] hyper::Error),
-    #[error("axum error: {0}")]
-    Axum(#[from] axum::Error),
+    /// Create the necessary tables in the database
+    #[arg(long)]
+    setup_db: bool,
 }
 
 #[tokio::main]
@@ -71,59 +61,34 @@ async fn main() {
     match config_res {
         Ok(config) => {
             debug!("read config: {config:?}");
-            if args.check {
-                info!("config is OK");
-            } else {
-                sharp(config).await;
+
+            if let Ok(opt) = SqliteConnectOptions::from_str(&config.database_url) {
+                if let Ok(con) = opt.create_if_missing(true).connect().await {
+                    debug!("established first connection to sqlite database");
+                    con.close();
+                }
+            }
+
+            match AnyPoolOptions::new()
+                .max_connections(config.database_max_connections)
+                .connect(&config.database_url)
+                .await
+            {
+                Ok(db) if args.check || args.setup_db => {
+                    if args.check {
+                        info!("config is OK");
+                    }
+                    if args.setup_db {
+                        match storage::setup(&db).await {
+                            Ok(_) => info!("successfully set up database"),
+                            Err(e) => error!("failed to setup database: {e}"),
+                        }
+                    }
+                }
+                Ok(db) => sharp::sharp(config, db).await,
+                Err(e) => error!("failed to connect to database: {e}"),
             }
         }
         Err(e) => error!("{e}"),
     }
-}
-
-async fn sharp(config: SharpConfig) {
-    let in_addr = SocketAddr::new(config.address, config.port);
-
-    info!("Listening on http://{}", in_addr);
-    info!("Proxying to http://{}", config.upstream);
-
-    let router = app::router().with_state(config.custom_css);
-
-    axum::Server::bind(&in_addr)
-        .http1_preserve_header_case(true)
-        .http1_title_case_headers(true)
-        .serve(make_service_fn(|socket: &AddrStream| {
-            // Fixme: Are all the router clones necessary?
-            let router = router.clone();
-            let client_addr = socket.remote_addr();
-            async move {
-                Ok::<_, Infallible>(service_fn(move |req| {
-                    let router = router.clone();
-                    async move {
-                        info!("{client_addr} : {} {}", req.method(), req.uri());
-                        let cookies = CookieJar::from_headers(req.headers());
-                        let proxy_through = exceptions::is_exception(&req)
-                            || cookies.get("SHARP_session").map(|c| c.value() == "true")
-                                == Some(true);
-                        if proxy_through {
-                            info!("proxying...");
-                            gateway_service::service(req, client_addr, config.upstream)
-                                .await
-                                .map(|res| {
-                                    res.map(|b| b.map_err(RoutingError::from).boxed_unsync())
-                                })
-                        } else {
-                            info!("client couldn't authorize");
-                            Ok(router
-                                .oneshot(req)
-                                .await
-                                .unwrap() // Is Infallible
-                                .map(|b| b.map_err(RoutingError::from).boxed_unsync()))
-                        }
-                    }
-                }))
-            }
-        }))
-        .await
-        .unwrap();
 }

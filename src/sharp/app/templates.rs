@@ -5,6 +5,7 @@ use crate::{config::CustomCss, i18n};
 pub struct Login {
     pub i18n: i18n::I18n,
     pub custom_css: Option<CustomCss>,
+    pub flashes: Vec<(axum_flash::Level, String)>,
 }
 
 #[derive(askama::Template)]
@@ -12,6 +13,7 @@ pub struct Login {
 pub struct Register {
     pub i18n: i18n::I18n,
     pub custom_css: Option<CustomCss>,
+    pub flashes: Vec<(axum_flash::Level, String)>,
 }
 
 #[derive(askama::Template)]

@@ -44,13 +44,17 @@ impl From<std::io::Error> for SharpConfigBuilderError {
     }
 }
 
-#[derive(Debug, Builder)]
+#[derive(Clone, Debug, Builder)]
 #[builder(derive(serde::Deserialize, merge::Merge))]
 pub struct SharpConfig {
     #[builder(default = "IpAddr::from([127, 0, 0, 1])")]
     pub address: IpAddr,
     pub port: u16,
     pub upstream: SocketAddr,
+    #[builder(default = "String::from(\"sqlite:sharp.sqlite\")")]
+    pub database_url: String,
+    #[builder(default = "10")]
+    pub database_max_connections: u32,
     #[builder(
         default = "vec![\"/favicon.ico\".to_string(), \"/robots.txt\".to_string(), \"/sitemap.xml\".to_string()]"
     )]
@@ -60,6 +64,8 @@ pub struct SharpConfig {
         build = "CustomCss::from_path_option(&self.custom_css)?"
     ))]
     pub custom_css: Option<CustomCss>,
+    #[builder(default = "String::from(\"/\")")]
+    pub redirect_url: String,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -80,7 +86,7 @@ impl SharpConfigBuilder {
     pub fn from_env() -> Result<Self, ConfigError> {
         info!("parsing config from environment variables");
         let address = match env::var("SHARP_ADDRESS").map(|s| s.parse()) {
-            Ok(p) => Some(p?),
+            Ok(a) => Some(a?),
             Err(_) => None,
         };
         let port = match env::var("SHARP_PORT").map(|s| u16::from_str(&s)) {
@@ -88,15 +94,18 @@ impl SharpConfigBuilder {
             Err(_) => None,
         };
         let upstream = match env::var("SHARP_UPSTREAM").map(|s| s.parse()) {
-            Ok(p) => Some(p?),
+            Ok(u) => Some(u?),
             Err(_) => None,
         };
         Ok(Self {
             address,
             port,
             upstream,
+            database_url: env::var("SHARP_DATABASE_URL").ok(),
+            database_max_connections: None,
             exceptions: None,
             custom_css: None,
+            redirect_url: None,
         })
     }
 

@@ -1,12 +1,23 @@
-use crate::i18n::I18n;
+use crate::{i18n::I18n, sharp::app::AUTH_COOKIE, storage::session};
 use axum::{
     headers::{Error, Header, HeaderName, HeaderValue},
     http::{header::CONTENT_LANGUAGE, StatusCode},
     response::{IntoResponseParts, ResponseParts},
 };
-use std::{ops::Deref, str::FromStr};
+use axum_extra::extract::cookie::{Cookie, SameSite};
+use std::{borrow::Cow, ops::Deref, str::FromStr};
 use tracing::debug;
 use unic_langid::LanguageIdentifier;
+
+pub fn build_auth_cookie<'c, S: Into<Cow<'c, str>>>(value: S) -> Cookie<'c> {
+    Cookie::build(AUTH_COOKIE, value.into())
+        .max_age(session::MAX_AGE)
+        .http_only(true)
+        .path("/")
+        .same_site(SameSite::Strict)
+        .secure(true)
+        .finish()
+}
 
 pub struct AcceptLanguage(Vec<LanguageIdentifier>);
 
@@ -20,17 +31,19 @@ impl Header for AcceptLanguage {
         Self: Sized,
         I: Iterator<Item = &'i HeaderValue>,
     {
-        let value = values.next().ok_or_else(Error::invalid)?;
-        let lang_ids: Vec<LanguageIdentifier> = value
-            .to_str()
-            .map_err(|_| Error::invalid())?
-            .split(',')
-            .filter_map(|lang| {
-                lang.split(';')
-                    .next()
-                    .and_then(|l| LanguageIdentifier::from_str(l).ok())
-            })
-            .collect();
+        let lang_ids: Vec<LanguageIdentifier> = if let Some(v) = values.next() {
+            v.to_str()
+                .map_err(|_| Error::invalid())?
+                .split(',')
+                .filter_map(|lang| {
+                    lang.split(';')
+                        .next()
+                        .and_then(|l| LanguageIdentifier::from_str(l).ok())
+                })
+                .collect()
+        } else {
+            Vec::with_capacity(0)
+        };
         debug!(
             "client requests languages: {:?}",
             lang_ids

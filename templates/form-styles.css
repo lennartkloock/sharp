@@ -66,3 +66,19 @@ input::placeholder {
 .link-field-container a:hover {
     text-decoration: underline;
 }
+
+.flash {
+    border: 1px solid;
+    border-radius: 5px;
+    padding: 0.5rem;
+}
+
+.flash.error {
+    border-color: var(--error-border);
+    background: var(--error-bg);
+}
+
+.flash.success {
+    border-color: var(--success-border);
+    background: var(--success-bg);
+}

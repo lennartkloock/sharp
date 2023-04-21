@@ -7,6 +7,7 @@ login:
     registered_question: Not registered yet?
     button: Log In
     register_link: Register
+    wrong_creds_error: Wrong email/password
 
 register:
     heading: Register
@@ -14,9 +15,12 @@ register:
     login_question: Already registered?
     login_link: Login
     button: Register
+    password_mismatch_error: The passwords do not match
+    password_too_short_error: The password must be at least 8 characters
 
 reset:
     heading: Reset Password
     button: Send Reset Mail
     login_link: Return to Login
-    
+
+internal_error: Internal Error
