@@ -79,24 +79,24 @@ pub async fn submit_register(
     let i18n: I18n = accept_lang.into();
     match new_user.try_into() {
         Ok(new_user) => match register_new_user(&db, new_user).await {
-                Ok(token) => (
-                    flash,
-                    cookies.add(build_auth_cookie(token)),
-                    Redirect::to(&config.redirect_url),
-                ),
-                Err(e) => (
-                    flash.error(format!("{e}")),
-                    cookies,
-                    Redirect::to("/register"),
-                ),
-            },
+            Ok(token) => (
+                flash,
+                cookies.add(build_auth_cookie(token)),
+                Redirect::to(&config.redirect_url),
+            ),
+            Err(e) => (
+                flash.error(format!("{e}")),
+                cookies,
+                Redirect::to("/register"),
+            ),
+        },
         Err(e) => {
             let e = match e {
                 RegisterError::PasswordTooShort => i18n.register.password_too_short_error,
                 RegisterError::PasswordMismatch => i18n.register.password_mismatch_error,
             };
             (flash.error(e), cookies, Redirect::to("/register"))
-        },
+        }
     }
 }
 
