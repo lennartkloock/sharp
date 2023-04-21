@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use crate::{
     config::CustomCss,
     i18n::I18n,
@@ -19,6 +20,7 @@ use axum::{
 use axum_extra::extract::CookieJar;
 use axum_flash::{Flash, IncomingFlashes};
 use tracing::{info, warn};
+use crate::config::SharpConfig;
 
 pub async fn login(
     State(custom_css): State<Option<CustomCss>>,
@@ -49,6 +51,7 @@ pub struct LoginData {
 
 pub async fn submit_login(
     State(db): State<Db>,
+    State(config): State<Arc<SharpConfig>>,
     TypedHeader(accept_lang): TypedHeader<AcceptLanguage>,
     cookies: CookieJar,
     flash: Flash,
@@ -59,7 +62,7 @@ pub async fn submit_login(
         Ok(token) => (
             flash,
             cookies.add(build_auth_cookie(token)),
-            Redirect::to("/"),
+            Redirect::to(&config.redirect_url),
         ),
         Err(LoginError::Argon2(e)) => {
             warn!("password hashing error during login attempt: {e}");
