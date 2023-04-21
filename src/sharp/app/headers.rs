@@ -31,17 +31,19 @@ impl Header for AcceptLanguage {
         Self: Sized,
         I: Iterator<Item = &'i HeaderValue>,
     {
-        let value = values.next().ok_or_else(Error::invalid)?;
-        let lang_ids: Vec<LanguageIdentifier> = value
-            .to_str()
-            .map_err(|_| Error::invalid())?
-            .split(',')
-            .filter_map(|lang| {
-                lang.split(';')
-                    .next()
-                    .and_then(|l| LanguageIdentifier::from_str(l).ok())
-            })
-            .collect();
+        let lang_ids: Vec<LanguageIdentifier> = if let Some(v) = values.next() {
+            v.to_str()
+                .map_err(|_| Error::invalid())?
+                .split(',')
+                .filter_map(|lang| {
+                    lang.split(';')
+                        .next()
+                        .and_then(|l| LanguageIdentifier::from_str(l).ok())
+                })
+                .collect()
+        } else {
+            Vec::with_capacity(0)
+        };
         debug!(
             "client requests languages: {:?}",
             lang_ids
