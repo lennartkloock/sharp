@@ -90,6 +90,7 @@ pub async fn sharp(config: SharpConfig, db: Db) {
                         let cookies = CookieJar::from_headers(req.headers());
                         let session = match cookies.get(AUTH_COOKIE).map(|c| c.value()) {
                             Some(c) => match session::get_by_token(&db, c).await {
+                                // TODO: Verify that session is not too old
                                 Ok(s) => Some(s),
                                 Err(e) => {
                                     return Ok(Response::builder()
