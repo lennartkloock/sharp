@@ -16,7 +16,6 @@ pub async fn setup(db: &Db) -> StorageResult<()> {
 #[cfg(test)]
 mod test {
     use crate::storage::{user, user::NewUser, Db};
-    use std::env;
 
     #[tokio::test]
     async fn fetch_test() {
@@ -50,13 +49,8 @@ mod test {
 
     #[tokio::test]
     async fn insert_user() {
-        let is_ci = env::var("CI").map(|v| v == "true").unwrap_or(false);
-        let url = if is_ci {
-            "sqlite::memory:"
-        } else {
-            "sqlite:sharp-test.sqlite"
-        };
-        let pool = Db::connect(url).await.unwrap();
+        let pool = Db::connect("sqlite::memory:").await.unwrap();
+        user::setup(&pool).await.unwrap();
         println!(
             "User id: {}",
             user::insert(

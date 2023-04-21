@@ -71,9 +71,7 @@ impl Deref for AcceptLanguage {
 
 impl From<AcceptLanguage> for I18n {
     fn from(lang: AcceptLanguage) -> Self {
-        lang.iter()
-            .find_map(I18n::from_lang_id)
-            .unwrap_or_default()
+        lang.iter().find_map(I18n::from_lang_id).unwrap_or_default()
     }
 }
 

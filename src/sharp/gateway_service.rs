@@ -1,3 +1,4 @@
+use crate::storage::session::Session;
 use hyper::{Body, Request, Response};
 use std::net::SocketAddr;
 use tokio::net::TcpStream;
@@ -5,6 +6,7 @@ use tokio::net::TcpStream;
 pub async fn service(
     mut req: Request<Body>,
     client_addr: SocketAddr,
+    session: Option<Session>,
     out_addr: SocketAddr,
 ) -> hyper::Result<Response<Body>> {
     let uri_string = format!(
@@ -25,6 +27,12 @@ pub async fn service(
         "X-Sharp-Client-Port",
         client_addr.port().to_string().parse().unwrap(),
     );
+    if let Some(session) = session {
+        req.headers_mut().insert(
+            "X-Sharp-User-Id",
+            session.user_id.to_string().parse().unwrap(),
+        );
+    }
 
     let host = req.uri().host().expect("uri has no host");
     let port = req.uri().port_u16().unwrap_or(80);

@@ -1,12 +1,12 @@
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use argon2::password_hash::Error;
 use crate::{
-    app::{
+    config::CustomCss,
+    i18n::I18n,
+    sharp::app::{
         headers::{AcceptLanguage, ContentLanguage},
         templates,
     },
-    config::CustomCss,
-    i18n::I18n,
 };
 use axum::{extract::State, Form, response::IntoResponse, TypedHeader};
 use axum::response::Redirect;
