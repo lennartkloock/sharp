@@ -2,8 +2,8 @@ use crate::{
     config::{CustomCss, SharpConfig},
     i18n::I18n,
     sharp::app::{
-        headers::{AcceptLanguage, ContentLanguage},
-        templates
+        headers::{build_auth_cookie, AcceptLanguage, ContentLanguage},
+        templates,
     },
     storage::{error::StorageResult, session, session::NewSession, user, user::NewUser, Db},
 };
@@ -12,12 +12,9 @@ use axum::{
     response::{IntoResponse, Redirect},
     Form, TypedHeader,
 };
-use axum_extra::extract::{
-    CookieJar,
-};
+use axum_extra::extract::CookieJar;
 use axum_flash::{Flash, IncomingFlashes};
 use std::sync::Arc;
-use crate::app::headers::build_auth_cookie;
 
 pub async fn register(
     State(custom_css): State<Option<CustomCss>>,

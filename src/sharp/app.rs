@@ -16,10 +16,9 @@ use axum::{
 pub const AUTH_COOKIE: &str = "SHARP_token";
 
 mod headers;
-mod templates;
-
 mod login;
 mod register;
+mod templates;
 
 pub fn router() -> Router<AppState> {
     Router::new()

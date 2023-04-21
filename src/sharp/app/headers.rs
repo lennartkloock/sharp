@@ -1,12 +1,11 @@
-use crate::i18n::I18n;
+use crate::{i18n::I18n, sharp::app::AUTH_COOKIE, storage::session};
 use axum::{
     headers::{Error, Header, HeaderName, HeaderValue},
     http::{header::CONTENT_LANGUAGE, StatusCode},
     response::{IntoResponseParts, ResponseParts},
 };
-use std::{ops::Deref, str::FromStr};
-use std::borrow::Cow;
 use axum_extra::extract::cookie::{Cookie, SameSite};
+use std::{borrow::Cow, ops::Deref, str::FromStr};
 use tracing::debug;
 use unic_langid::LanguageIdentifier;
 

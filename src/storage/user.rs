@@ -7,7 +7,7 @@ use argon2::{
     password_hash::{rand_core::OsRng, SaltString},
     Argon2, PasswordHasher,
 };
-use sqlx::{any::AnyKind, Any, Executor, Sqlite};
+use sqlx::{any::AnyKind, Any, Executor};
 use tracing::info;
 
 pub type UserId = i64;
@@ -74,7 +74,10 @@ pub async fn insert<'a, E: Executor<'a, Database = Any>>(
     Ok(id)
 }
 
-pub async fn get<'a, E: Executor<'a, Database = Any>>(e: E, email: &str) -> StorageResult<Option<User>> {
+pub async fn get<'a, E: Executor<'a, Database = Any>>(
+    e: E,
+    email: &str,
+) -> StorageResult<Option<User>> {
     Ok(
         sqlx::query_as("SELECT id, email, username, password_hash FROM users WHERE email = ?")
             .bind(email.to_lowercase())
